@@ -6,11 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.Player;
-import net.runelite.api.events.GameStateChanged;
-import net.runelite.api.events.GameTick;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
-import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.task.Schedule;
@@ -19,6 +16,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -39,10 +37,8 @@ public class PandemicScapePlugin extends Plugin
 	@Inject
 	private PandemicScapeDataManager pandemicScapeDataManager;
 
-	private final int TICK_INTERVAL = 20;
-
 	private List<Player> playersToInfect = null;
-	private int tickCount = 0;
+	private PandemicScapeData userData;
 
 	@Override
 	protected void startUp() throws Exception
@@ -56,46 +52,43 @@ public class PandemicScapePlugin extends Plugin
 
 	}
 
-	@Subscribe
-	public void onGameStateChanged(GameStateChanged e) {
-		if(e.getGameState() == GameState.LOGGED_IN) {
-			Player player = client.getLocalPlayer();
-			PandemicScapeData data = new PandemicScapeData(
-					player.getName(),
-					Instant.now().toString(),
-					"Idyl",
-					client.getLocalPlayer().getWorldLocation()
-			);
-			pandemicScapeDataManager.updatePandemicScapeApi(data);
-		}
-	}
-
 	@Schedule(
 			period = 20,
 			unit = ChronoUnit.SECONDS,
 			asynchronous = true
 	)
 	public void attemptToInfect() {
-//		tickCount++;
 		if(client.getGameState() != GameState.LOGGED_IN) return;
 
 		List<Player> players = client.getPlayers();
 
 		playersToInfect = players.stream().filter(p ->
-			p != client.getLocalPlayer() && client.getLocalPlayer().getWorldLocation().distanceTo(p.getWorldLocation()) < 10
+			client.getLocalPlayer().getWorldLocation().distanceTo(p.getWorldLocation()) < 10
 		).collect(Collectors.toList());
 		List<String> playerNames = players.stream().map(p -> p.getName()+"").collect(Collectors.toList());
 		pandemicScapeDataManager.getInfectedByUsernames(playerNames);
 	}
 
 	public void onPlayerDataReceived(HashMap<String, PandemicScapeData> playerData) {
+		AtomicInteger infectionCount = new AtomicInteger();
 		playersToInfect.forEach(p -> {
-			log.info("Attempting to infect "+p.getName());
 			boolean isInfected = playerData.get(p.getName()) != null;
 
-			if(!isInfected) infectPlayer(p);
+			if(!isInfected) {
+				// 1 in 10 chance to infect nearby players
+				double roll = Math.random()*10;
+				if(roll < 1) {
+					infectPlayer(p);
+					infectionCount.getAndIncrement();
+				}
+			}
 		});
 
+		userData = playerData.get(client.getLocalPlayer().getName());
+		if(userData != null) {
+			userData.setNumberInfected(userData.getNumberInfected() + infectionCount.get());
+			pandemicScapeDataManager.updatePandemicScapeApi(userData);
+		}
 		playersToInfect = null;
 	}
 
@@ -105,7 +98,7 @@ public class PandemicScapePlugin extends Plugin
 				player.getName(),
 				Instant.now().toString(),
 				client.getLocalPlayer().getName(),
-				client.getLocalPlayer().getWorldLocation()
+				player.getWorldLocation()
 		);
 
 		pandemicScapeDataManager.updatePandemicScapeApi(data);

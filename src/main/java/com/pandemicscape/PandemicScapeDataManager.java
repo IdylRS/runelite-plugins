@@ -30,7 +30,7 @@ public class  PandemicScapeDataManager {
     {
         String username = urlifyString(data.getUsername());
         String url = baseUrl.concat("/infected/u/"+username);
-        log.info("let's infect "+data.getUsername());
+
         try
         {
             Request r = new Request.Builder()
@@ -81,8 +81,6 @@ public class  PandemicScapeDataManager {
                     .get()
                     .build();
 
-            log.info("Requesting "+r.url());
-
             okHttpClient.newCall(r).enqueue(new Callback() {
                 @Override
                 public void onFailure(Call call, IOException e) {
@@ -95,7 +93,6 @@ public class  PandemicScapeDataManager {
                         try
                         {
                             String body = response.body().string();
-                            log.info(body);
                             JsonArray j = gson.fromJson(body, JsonArray.class);
                             HashMap<String, PandemicScapeData> playerData = parsePropHuntData(j);
                             plugin.onPlayerDataReceived(playerData);
