@@ -15,6 +15,7 @@ import net.runelite.client.task.Schedule;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -71,7 +72,8 @@ public class PandemicScapePlugin extends Plugin
 	}
 
 	public void onPlayerDataReceived(HashMap<String, PandemicScapeData> playerData) {
-		AtomicInteger infectionCount = new AtomicInteger();
+		List<Player> infectedPlayers = new ArrayList<>();
+
 		playersToInfect.forEach(p -> {
 			boolean isInfected = playerData.get(p.getName()) != null;
 
@@ -80,7 +82,7 @@ public class PandemicScapePlugin extends Plugin
 				double roll = Math.random()*10;
 				if(roll < 1) {
 					infectPlayer(p);
-					infectionCount.getAndIncrement();
+					infectedPlayers.add(p);
 					clientThread.invokeLater(() -> {
 						client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You have infected "+p.getName()+".", "");
 					});
@@ -90,7 +92,8 @@ public class PandemicScapePlugin extends Plugin
 
 		userData = playerData.get(client.getLocalPlayer().getName());
 		if(userData != null) {
-			userData.setNumberInfected(userData.getNumberInfected() + infectionCount.get());
+			log.info(userData.getNumberInfected() + " new infect: "+infectedPlayers.size());
+			userData.setNumberInfected(userData.getNumberInfected() + infectedPlayers.size());
 			pandemicScapeDataManager.updatePandemicScapeApi(userData);
 		}
 		playersToInfect = null;
@@ -102,6 +105,7 @@ public class PandemicScapePlugin extends Plugin
 				player.getName(),
 				Instant.now().toString(),
 				client.getLocalPlayer().getName(),
+				0,
 				player.getWorldLocation()
 		);
 

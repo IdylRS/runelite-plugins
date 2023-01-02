@@ -13,11 +13,11 @@ public class PandemicScapeData {
     @Setter
     private int numberInfected;
 
-    public PandemicScapeData(String username, String infectedDateTime, String infectedBy, WorldPoint infectionPoint) {
+    public PandemicScapeData(String username, String infectedDateTime, String infectedBy, int numberInfected, WorldPoint infectionPoint) {
         this.username = username;
         this.infectedDateTime = infectedDateTime;
         this.infectedBy = infectedBy;
         this.infectionPoint = infectionPoint;
-        this.numberInfected = 0;
+        this.numberInfected = numberInfected;
     }
 }
