@@ -28,7 +28,7 @@ public class  PandemicScapeDataManager {
     protected void updatePandemicScapeApi(PandemicScapeData data)
     {
         String username = urlifyString(data.getUsername());
-        String url = baseUrl.concat("/infected/"+username);
+        String url = baseUrl.concat("/infected/u/"+username);
         log.info("let's infect "+data.getUsername());
         try
         {
@@ -76,7 +76,7 @@ public class  PandemicScapeDataManager {
 
         try {
             Request r = new Request.Builder()
-                    .url(baseUrl.concat("/infected/".concat(playersString)))
+                    .url(baseUrl.concat("/infected/u/".concat(playersString)))
                     .get()
                     .build();
 
