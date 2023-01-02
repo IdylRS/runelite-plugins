@@ -14,7 +14,7 @@ import java.util.List;
 @Slf4j
 @Singleton
 public class  PandemicScapeDataManager {
-    private final String baseUrl = "http://localhost:8080";
+    private final String baseUrl = "http://virus.idyl.live:8080";
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
     @Inject
