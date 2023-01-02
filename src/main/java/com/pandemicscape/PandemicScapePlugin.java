@@ -83,9 +83,11 @@ public class PandemicScapePlugin extends Plugin
 				if(roll < 1) {
 					infectPlayer(p);
 					infectedPlayers.add(p);
-					clientThread.invokeLater(() -> {
-						client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You have infected "+p.getName()+".", "");
-					});
+
+					if(config.sendChatMessage())
+						clientThread.invokeLater(() -> {
+							client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You have infected "+p.getName()+".", "");
+						});
 				}
 			}
 		});
@@ -99,7 +101,6 @@ public class PandemicScapePlugin extends Plugin
 	}
 
 	private void infectPlayer(Player player) {
-		log.info("Infecting "+player.getName());
 		PandemicScapeData data = new PandemicScapeData(
 				player.getName(),
 				Instant.now().toString(),

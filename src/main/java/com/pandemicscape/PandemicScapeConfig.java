@@ -4,16 +4,16 @@ import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 
-@ConfigGroup("example")
+@ConfigGroup("pandemicscape")
 public interface PandemicScapeConfig extends Config
 {
 	@ConfigItem(
-		keyName = "greeting",
-		name = "Welcome Greeting",
-		description = "The message to show to the user when they login"
+		keyName = "sendChatMessage",
+		name = "Notify on Infection",
+		description = "Get a notification when you infect a player"
 	)
-	default String greeting()
+	default boolean sendChatMessage()
 	{
-		return "Hello";
+		return true;
 	}
 }
