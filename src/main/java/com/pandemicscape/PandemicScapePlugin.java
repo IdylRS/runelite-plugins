@@ -92,7 +92,6 @@ public class PandemicScapePlugin extends Plugin
 
 		userData = playerData.get(client.getLocalPlayer().getName());
 		if(userData != null) {
-			log.info(userData.getNumberInfected() + " new infect: "+infectedPlayers.size());
 			userData.setNumberInfected(userData.getNumberInfected() + infectedPlayers.size());
 			pandemicScapeDataManager.updatePandemicScapeApi(userData);
 		}
