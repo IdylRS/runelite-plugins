@@ -3,6 +3,7 @@ package com.pandemicscape;
 import com.google.inject.Provides;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.Player;
@@ -80,6 +81,9 @@ public class PandemicScapePlugin extends Plugin
 				if(roll < 1) {
 					infectPlayer(p);
 					infectionCount.getAndIncrement();
+					clientThread.invokeLater(() -> {
+						client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You have infected "+p.getName()+".", "");
+					});
 				}
 			}
 		});
