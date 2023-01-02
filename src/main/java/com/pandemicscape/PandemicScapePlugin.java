@@ -59,13 +59,12 @@ public class PandemicScapePlugin extends Plugin
 	@Subscribe
 	public void onGameStateChanged(GameStateChanged e) {
 		if(e.getGameState() == GameState.LOGGED_IN) {
-			log.info("hello to "+client.getLocalPlayer().getName());
 			Player player = client.getLocalPlayer();
 			PandemicScapeData data = new PandemicScapeData(
 					player.getName(),
 					Instant.now().toString(),
 					"Idyl",
-					client.getLocalPlayer().getWorldLocation().getRegionID()
+					client.getLocalPlayer().getWorldLocation()
 			);
 			pandemicScapeDataManager.updatePandemicScapeApi(data);
 		}
@@ -106,7 +105,7 @@ public class PandemicScapePlugin extends Plugin
 				player.getName(),
 				Instant.now().toString(),
 				client.getLocalPlayer().getName(),
-				client.getLocalPlayer().getWorldLocation().getRegionID()
+				client.getLocalPlayer().getWorldLocation()
 		);
 
 		pandemicScapeDataManager.updatePandemicScapeApi(data);

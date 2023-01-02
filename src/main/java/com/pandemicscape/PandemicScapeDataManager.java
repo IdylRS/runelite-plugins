@@ -2,6 +2,7 @@ package com.pandemicscape;
 
 import com.google.gson.*;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.coords.WorldPoint;
 import okhttp3.*;
 
 import javax.inject.Inject;
@@ -120,11 +121,17 @@ public class  PandemicScapeDataManager {
         {
             JsonObject jObj = jsonElement.getAsJsonObject();
             String username = jObj.get("username").getAsString();
+            JsonObject worldPointObj = jObj.get("infectionPoint").getAsJsonObject();
+            WorldPoint point = new WorldPoint(
+                    worldPointObj.get("x").getAsInt(),
+                    worldPointObj.get("y").getAsInt(),
+                    worldPointObj.get("plane").getAsInt()
+            );
             PandemicScapeData d = new PandemicScapeData(
                     jObj.get("username").getAsString(),
                     jObj.get("infectedDateTime").getAsString(),
                     jObj.get("infectedBy").getAsString(),
-                    jObj.get("infectedRegion").getAsInt()
+                    point
             );
             l.put(username, d);
         }
