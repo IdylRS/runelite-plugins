@@ -63,7 +63,6 @@ public class PandemicScapePlugin extends Plugin
 		if(client.getGameState() != GameState.LOGGED_IN) return;
 
 		List<Player> players = client.getPlayers();
-
 		playersToInfect = players.stream().filter(p ->
 			client.getLocalPlayer().getWorldLocation().distanceTo(p.getWorldLocation()) < 10
 		).collect(Collectors.toList());
@@ -72,7 +71,8 @@ public class PandemicScapePlugin extends Plugin
 	}
 
 	public void onPlayerDataReceived(HashMap<String, PandemicScapeData> playerData) {
-		List<Player> infectedPlayers = new ArrayList<>();
+		List<PandemicScapeData> infectedPlayers = new ArrayList<>();
+		List<String> infectedPlayerNames = new ArrayList<>();
 
 		playersToInfect.forEach(p -> {
 			boolean isInfected = playerData.get(p.getName()) != null;
@@ -81,8 +81,8 @@ public class PandemicScapePlugin extends Plugin
 				// 1 in 10 chance to infect nearby players
 				double roll = Math.random()*10;
 				if(roll < 1) {
-					infectPlayer(p);
-					infectedPlayers.add(p);
+					infectedPlayerNames.add(p.getName());
+					infectedPlayers.add(infectPlayer(p));
 
 					if(config.sendChatMessage())
 						clientThread.invokeLater(() -> {
@@ -92,24 +92,19 @@ public class PandemicScapePlugin extends Plugin
 			}
 		});
 
-		userData = playerData.get(client.getLocalPlayer().getName());
-		if(userData != null) {
-			userData.setNumberInfected(userData.getNumberInfected() + infectedPlayers.size());
-			pandemicScapeDataManager.updatePandemicScapeApi(userData);
-		}
+		pandemicScapeDataManager.updatePandemicScapeApi(infectedPlayers);
 		playersToInfect = null;
 	}
 
-	private void infectPlayer(Player player) {
+	private PandemicScapeData infectPlayer(Player player) {
 		PandemicScapeData data = new PandemicScapeData(
 				player.getName(),
 				Instant.now().toString(),
 				client.getLocalPlayer().getName(),
-				0,
 				player.getWorldLocation()
 		);
 
-		pandemicScapeDataManager.updatePandemicScapeApi(data);
+		return data;
 	}
 
 	@Provides

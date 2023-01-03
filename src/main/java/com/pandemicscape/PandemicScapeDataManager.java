@@ -8,6 +8,8 @@ import okhttp3.*;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -15,7 +17,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Singleton
 public class  PandemicScapeDataManager {
-    private final String baseUrl = "http://virus.idyl.live:8080";
+    private final String baseUrl = "https://virus.idyl.live";
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
     @Inject
@@ -27,12 +29,16 @@ public class  PandemicScapeDataManager {
     @Inject
     private Gson gson;
 
+    protected void updatePandemicScapeApi(PandemicScapeData data) {
+        updatePandemicScapeApi(Arrays.asList(data));
+    }
+
     protected void updatePandemicScapeApi(List<PandemicScapeData> data)
     {
         List<String> names = data.stream().map(d -> d.getUsername()).collect(Collectors.toList());
         String playersString = urlifyString(String.join(",", names));
         String url = baseUrl.concat("/infected/u/"+playersString);
-
+        
         try
         {
             Request r = new Request.Builder()
@@ -130,7 +136,6 @@ public class  PandemicScapeDataManager {
                     jObj.get("username").getAsString(),
                     jObj.get("infectedDateTime").getAsString(),
                     jObj.get("infectedBy").getAsString(),
-                    jObj.get("numberInfected").getAsInt(),
                     point
             );
             l.put(username, d);
