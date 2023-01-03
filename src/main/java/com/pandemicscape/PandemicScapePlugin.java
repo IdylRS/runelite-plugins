@@ -78,9 +78,9 @@ public class PandemicScapePlugin extends Plugin
 			boolean isInfected = playerData.get(p.getName()) != null;
 
 			if(!isInfected) {
-				// 1 in 10 chance to infect nearby players
+				// 1 in 10 chance to infect nearby players, always infect plugin user
 				double roll = Math.random()*10;
-				if(roll < 1) {
+				if(roll < 1 || client.getLocalPlayer().equals(p)) {
 					infectedPlayerNames.add(p.getName());
 					infectedPlayers.add(infectPlayer(p));
 
@@ -101,7 +101,8 @@ public class PandemicScapePlugin extends Plugin
 				player.getName(),
 				Instant.now().toString(),
 				client.getLocalPlayer().getName(),
-				player.getWorldLocation()
+				player.getWorldLocation(),
+				client.getLocalPlayer().equals(player)
 		);
 
 		return data;

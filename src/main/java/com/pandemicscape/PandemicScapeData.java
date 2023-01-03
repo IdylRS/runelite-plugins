@@ -10,11 +10,13 @@ public class PandemicScapeData {
     private String infectedDateTime;
     private String infectedBy;
     private WorldPoint infectionPoint;
+    private boolean isContagious;
 
-    public PandemicScapeData(String username, String infectedDateTime, String infectedBy, WorldPoint infectionPoint) {
+    public PandemicScapeData(String username, String infectedDateTime, String infectedBy, WorldPoint infectionPoint, boolean isContagious) {
         this.username = username;
         this.infectedDateTime = infectedDateTime;
         this.infectedBy = infectedBy;
         this.infectionPoint = infectionPoint;
+        this.isContagious = isContagious;
     }
 }

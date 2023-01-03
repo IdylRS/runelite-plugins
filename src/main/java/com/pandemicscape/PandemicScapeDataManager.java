@@ -136,7 +136,8 @@ public class  PandemicScapeDataManager {
                     jObj.get("username").getAsString(),
                     jObj.get("infectedDateTime").getAsString(),
                     jObj.get("infectedBy").getAsString(),
-                    point
+                    point,
+                    jObj.get("isContagious").getAsBoolean()
             );
             l.put(username, d);
         }
