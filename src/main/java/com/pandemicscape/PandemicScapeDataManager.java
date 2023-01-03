@@ -10,6 +10,7 @@ import javax.inject.Singleton;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Singleton
@@ -26,10 +27,11 @@ public class  PandemicScapeDataManager {
     @Inject
     private Gson gson;
 
-    protected void updatePandemicScapeApi(PandemicScapeData data)
+    protected void updatePandemicScapeApi(List<PandemicScapeData> data)
     {
-        String username = urlifyString(data.getUsername());
-        String url = baseUrl.concat("/infected/u/"+username);
+        List<String> names = data.stream().map(d -> d.getUsername()).collect(Collectors.toList());
+        String playersString = urlifyString(String.join(",", names));
+        String url = baseUrl.concat("/infected/u/"+playersString);
 
         try
         {
