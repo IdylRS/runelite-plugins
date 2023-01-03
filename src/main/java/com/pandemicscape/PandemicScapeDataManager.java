@@ -38,7 +38,7 @@ public class  PandemicScapeDataManager {
         List<String> names = data.stream().map(d -> d.getUsername()).collect(Collectors.toList());
         String playersString = urlifyString(String.join(",", names));
         String url = baseUrl.concat("/infected/u/"+playersString);
-        
+
         try
         {
             Request r = new Request.Builder()
