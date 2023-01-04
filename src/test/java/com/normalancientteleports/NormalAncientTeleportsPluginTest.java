@@ -1,13 +1,13 @@
-package com.example;
+package com.normalancientteleports;
 
 import net.runelite.client.RuneLite;
 import net.runelite.client.externalplugins.ExternalPluginManager;
 
-public class ExamplePluginTest
+public class NormalAncientTeleportsPluginTest
 {
 	public static void main(String[] args) throws Exception
 	{
-		ExternalPluginManager.loadBuiltin(ExamplePlugin.class);
+		ExternalPluginManager.loadBuiltin(NormalAncientTeleportsPlugin.class);
 		RuneLite.main(args);
 	}
 }

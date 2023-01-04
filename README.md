@@ -1,2 +1,3 @@
-# Example
-An example greeter plugin
+# Normal Ancient Teleports
+
+Renames the teleports in the Ancient spell book to their logical names

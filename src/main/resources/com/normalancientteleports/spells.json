@@ -1,0 +1,42 @@
+[
+  {
+    "widgetID": 14286940,
+    "originalName": "Paddewwa Teleport",
+    "newName": "Edgeville"
+  },
+  {
+    "widgetID": 14286941,
+    "originalName": "Senntisten Teleport",
+    "newName": "Digsite"
+  },
+  {
+    "widgetID": 14286942,
+    "originalName": "Kharyrll Teleport",
+    "newName": "Canifis"
+  },
+  {
+    "widgetID": 14286943,
+    "originalName": "Lassar Teleport",
+    "newName": "Ice Mountain"
+  },
+  {
+    "widgetID": 14286944,
+    "originalName": "Dareeyak Teleport",
+    "newName": "Forgotten Cemetery"
+  },
+  {
+    "widgetID": 14286945,
+    "originalName": "Carrallangar Teleport",
+    "newName": "Graveyard of Shadows"
+  },
+  {
+    "widgetID": 14286946,
+    "originalName": "Annakarl Teleport",
+    "newName": "Annakarl"
+  },
+  {
+    "widgetID": 14286947,
+    "originalName": "Ghorrock Teleport",
+    "newName": "Frozen Waste Plateau"
+  }
+]
