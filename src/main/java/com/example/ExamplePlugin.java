@@ -3,10 +3,9 @@ package com.example;
 import com.google.inject.Provides;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatMessageType;
-import net.runelite.api.Client;
-import net.runelite.api.GameState;
-import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.*;
+import net.runelite.api.events.HitsplatApplied;
+import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
@@ -24,25 +23,33 @@ public class ExamplePlugin extends Plugin
 	@Inject
 	private ExampleConfig config;
 
+	@Inject
+	private SoundEngine soundEngine;
+
 	@Override
 	protected void startUp() throws Exception
 	{
-		log.info("Example started!");
 	}
 
 	@Override
 	protected void shutDown() throws Exception
 	{
-		log.info("Example stopped!");
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged gameStateChanged)
-	{
-		if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
-		{
-			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Example says " + config.greeting(), null);
+	public void onHitsplatApplied(HitsplatApplied e) {
+		if(
+			e.getHitsplat().getAmount() == 0 &&
+			e.getHitsplat().getHitsplatType() == HitsplatID.BLOCK_ME &&
+			!e.getActor().equals(client.getLocalPlayer())
+		) {
+			soundEngine.playClip(Sound.FART);
 		}
+	}
+
+	@Subscribe
+	public void onMenuOptionClicked(MenuOptionClicked e) {
+
 	}
 
 	@Provides
