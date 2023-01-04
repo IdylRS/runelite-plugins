@@ -58,9 +58,21 @@ public class NormalAncientTeleportsPlugin extends Plugin
 		if(e.getGroupId() == WidgetID.SPELLBOOK_GROUP_ID) {
 			spells.forEach(spell -> {
 				Widget widget = client.getWidget(spell.widgetID);
-				String newText = widget.getName().replaceAll(spell.originalName, spell.newName.concat(" Teleport"));
+				String newText = widget.getName().replaceAll(spell.originalName, spell.newName);
 				widget.setName(newText);
 			});
+		}
+		else if(e.getGroupId() == 17 && config.replacePortalNexus()) {
+			Widget widget = client.getWidget(17, 12);
+
+			for(Widget w : widget.getChildren()) {
+				spells.forEach(spell -> {
+					if(w.getText().contains(spell.originalName)) {
+						String newText = w.getText().replaceAll(spell.originalName, spell.newName);
+						w.setText(newText);
+					}
+				});
+			}
 		}
 	}
 
@@ -73,7 +85,7 @@ public class NormalAncientTeleportsPlugin extends Plugin
 
 		spells.forEach(spell -> {
 			if(textWidget.getText().contains(spell.originalName)) {
-				String newText = textWidget.getText().replaceAll(spell.originalName, spell.newName);
+				String newText = textWidget.getText().replaceAll(spell.originalName.concat(" Teleport"), spell.newName);
 				textWidget.setText(newText);
 			}
 		});
