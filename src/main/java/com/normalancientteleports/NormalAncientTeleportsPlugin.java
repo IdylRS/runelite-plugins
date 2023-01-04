@@ -48,17 +48,6 @@ public class NormalAncientTeleportsPlugin extends Plugin
 	@Override
 	protected void shutDown() throws Exception
 	{
-		log.info("Example stopped!");
-	}
-
-	private <T> T loadDefinitionResource(Class<T> classType, String resource) {
-		// Load the resource as a stream and wrap it in a reader
-		InputStream resourceStream = classType.getResourceAsStream(resource);
-		assert resourceStream != null;
-		InputStreamReader definitionReader = new InputStreamReader(resourceStream);
-
-		// Load the objects from the JSON file
-		return gson.fromJson(definitionReader, classType);
 	}
 
 	@Subscribe
