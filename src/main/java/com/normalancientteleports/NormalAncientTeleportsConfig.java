@@ -9,7 +9,7 @@ public interface NormalAncientTeleportsConfig extends Config
 {
     @ConfigItem(
             keyName = "replacePortalNexus",
-            name = "Replace Portal Nexus Spells",
+            name = "Replace Portal Nexus Spell names",
             description = "Replace the spell names in the portal nexus"
     )
     default boolean replacePortalNexus() { return true; }
