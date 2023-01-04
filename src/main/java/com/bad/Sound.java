@@ -2,7 +2,11 @@ package com.bad;
 
 public enum Sound {
     FART("fart.wav"),
-    KEBAB("kebab.wav");
+    WET_FART("wet-fart.wav"),
+    KEBAB("kebab.wav"),
+    GOAT("goat.wav"),
+    UWU("uwu.wav"),
+    FORTNITE("fortnite.wav");
 
     private final String resourceName;
 
