@@ -1,4 +1,4 @@
-package com.example;
+package com.bad;
 
 public enum Sound {
     FART("fart.wav"),
