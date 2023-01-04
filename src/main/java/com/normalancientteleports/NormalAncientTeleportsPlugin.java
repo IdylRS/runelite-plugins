@@ -86,31 +86,6 @@ public class NormalAncientTeleportsPlugin extends Plugin
 			if(textWidget.getText().contains(spell.originalName)) {
 				String newText = textWidget.getText().replaceAll(spell.originalName, spell.newName);
 				textWidget.setText(newText);
-
-//				if(spell.widgetID == 14286947 || spell.widgetID == 14286945 || spell.widgetID == 14286944) {
-//					int i = 0;
-//					if(widget.getChildren() == null) return;
-//
-//					log.info(widget.getChildren().length+" length");
-//
-//					for(Widget w : widget.getChildren()) {
-//						int offset = 0;
-//
-//						if(i < 3) {
-//							w.setSize(w.getWidth(), w.getHeight()+20);
-//						}
-//						else if(i == 3) {
-//							offset = 7;
-//						}
-//						else {
-//							offset = 15;
-//						}
-//
-//						w.setPos(w.getOriginalX(), w.getOriginalY()+offset);
-//						w.revalidate();
-//						i++;
-//					}
-//				}
 			}
 		});
 	}
