@@ -156,4 +156,24 @@ public interface BadConfig extends Config
 	{
 		return true;
 	}
+
+	@ConfigItem(
+			keyName = "lagSimulator",
+			name = "Lag Simulator",
+			description = "Game occasionally disconnects"
+	)
+	default boolean lagSimulator()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+			keyName = "sendTweets",
+			name = "Send Chat Messages as Tweets",
+			description = "Send Chat Messages as Tweets"
+	)
+	default boolean sendTweets()
+	{
+		return false;
+	}
 }

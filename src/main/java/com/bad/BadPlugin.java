@@ -1,5 +1,8 @@
 package com.bad;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonSyntaxException;
 import com.google.inject.Provides;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
@@ -16,11 +19,11 @@ import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import okhttp3.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @PluginDescriptor(
@@ -39,6 +42,12 @@ public class BadPlugin extends Plugin
 
 	@Inject
 	private SoundEngine soundEngine;
+
+	@Inject
+	private OkHttpClient okHttpClient;
+
+	@Inject
+	private Gson gson;
 
 	private WorldPoint lastPoint;
 	private HashMap<Skill, Integer> skillXP;
@@ -144,8 +153,9 @@ public class BadPlugin extends Plugin
 			e.getActor().setOverheadText("Rawr X[)");
 			soundEngine.playClip(Sound.UWU);
 		}
-		else if(e.getOverheadText() == "") {
-			e.getActor().setOverheadText("");
+
+		if(e.getActor().equals(client.getLocalPlayer()) && config.sendTweets()) {
+			sendTweet(e.getOverheadText());
 		}
 
 		if(client.getLocalPlayer().getWorldLocation().getRegionID() == 12598 && config.muteGE()) {
@@ -154,8 +164,26 @@ public class BadPlugin extends Plugin
 	}
 
 	@Subscribe
+	public void onAnimationChanged(AnimationChanged e) {
+		if(e.getActor().getAnimation() == AnimationID.TZTOK_JAD_MAGIC_ATTACK) {
+			e.getActor().setAnimation(AnimationID.TZTOK_JAD_RANGE_ATTACK);
+		}
+		else if(e.getActor().getAnimation() == AnimationID.TZTOK_JAD_RANGE_ATTACK) {
+			 e.getActor().setAnimation(AnimationID.TZTOK_JAD_MAGIC_ATTACK);
+		}
+	}
+
+	@Subscribe
 	public void onGameTick(GameTick e){
 		if(client.getLocalPlayer() == null) return;
+
+		if(config.lagSimulator()) {
+			double roll = Math.random()*50;
+
+			if(roll < 1) {
+				client.setGameState(GameState.CONNECTION_LOST);
+			}
+		}
 
 		if(ticksTilPoop > 0) {
 			ticksTilPoop--;
@@ -184,14 +212,15 @@ public class BadPlugin extends Plugin
 		if(config.bobMessages()) {
 			double roll = Math.random()*100;
 			if(roll < 1) {
-				if(Quest.DRAGON_SLAYER_II.getState(client) == QuestState.FINISHED) {
-					int index = (int) Math.floor(Math.random()*BOB_WHOLESOME_LINES_DEAD.size());
-					clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Bob the cat says: "+BOB_WHOLESOME_LINES_DEAD.get(index), "Bob the cat"));
-				}
-				else {
-					int index = (int) Math.floor(Math.random()*BOB_WHOLESOME_LINES.size());
-					clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Bob the cat says: "+BOB_WHOLESOME_LINES.get(index), "Bob the cat"));
-				}
+				int index = (int) Math.floor(Math.random()*BOB_WHOLESOME_LINES.size());
+				clientThread.invokeLater(() -> {
+					client.addChatMessage(
+							ChatMessageType.GAMEMESSAGE,
+							"",
+							"Bob the cat says: "+BOB_WHOLESOME_LINES.get(index),
+							"Bob the cat"
+					);
+				});
 			}
 		}
 
@@ -218,6 +247,10 @@ public class BadPlugin extends Plugin
 		if(skillXP.get(e.getSkill()) < e.getXp() && config.playGoat()) {
 			soundEngine.playClip(Sound.GOAT);
 			if(config.screenDarkener()) overlay.setOpacity(255);
+		}
+
+		if(e.getSkill().equals(Skill.AGILITY) && skillXP.get(e.getSkill()) < e.getXp()) {
+			client.setGameState(GameState.LOGIN_SCREEN);
 		}
 
 		if(e.getSkill().equals(Skill.HITPOINTS) && config.healthDarkener()) {
@@ -249,6 +282,42 @@ public class BadPlugin extends Plugin
 			overlay.setModelZoom(100);
 			overlay.revalidate();
 		}
+		if(e.getGroupId() == WidgetInfo.QUESTLIST_BOX.getGroupId()) {
+			Arrays.asList(client.getWidget(399, 7).getChildren()).forEach(w -> {
+				if(w.getText().contains("Recipe for Disaster")) {
+					log.info(w.getText());
+					w.setHidden(true);
+					w.revalidate();
+				}
+			});
+		}
+	}
+
+	private void sendTweet(String tweet) {
+		String url = "http://localhost:3000";
+		String toSend = urlifyString(tweet);
+
+		try {
+			Request r = new Request.Builder()
+					.url(url.concat("?tweet="+toSend))
+					.get()
+					.build();
+
+			okHttpClient.newCall(r).enqueue(new Callback() {
+				@Override
+				public void onFailure(Call call, IOException e) {
+					log.info("Error getting prop hunt data by username", e);
+				}
+
+				@Override
+				public void onResponse(Call call, Response response) throws IOException {
+					response.close();
+				}
+			});
+		}
+		catch(IllegalArgumentException e) {
+			log.error("Bad URL given: " + e.getLocalizedMessage());
+		}
 	}
 
 	private void addPoop(WorldPoint point) {
@@ -264,5 +333,19 @@ public class BadPlugin extends Plugin
 	BadConfig provideConfig(ConfigManager configManager)
 	{
 		return configManager.getConfig(BadConfig.class);
+	}
+
+	private String urlifyString(String str) {
+		return str.trim().replaceAll("\\s", "%20");
+	}
+}
+
+class Tweet {
+	String tweet;
+	String sender;
+
+	public Tweet(String tweet, String sender) {
+		this.tweet = tweet;
+		this.sender = sender;
 	}
 }
