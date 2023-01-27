@@ -4,14 +4,14 @@ import com.google.inject.Provides;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
-import net.runelite.api.events.GameObjectSpawned;
-import net.runelite.api.events.GameStateChanged;
-import net.runelite.api.events.PlayerSpawned;
+import net.runelite.api.events.*;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+
+import java.util.stream.Collectors;
 
 @Slf4j
 @PluginDescriptor(
@@ -23,31 +23,53 @@ public class ExamplePlugin extends Plugin
 	private Client client;
 
 	@Inject
+	private ConfigManager configManager;
+
+	@Inject
 	private ExampleConfig config;
 
 	@Override
 	protected void startUp() throws Exception
 	{
-		log.info("Example started!");
 	}
 
 	@Override
 	protected void shutDown() throws Exception
 	{
-		log.info("Example stopped!");
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged gameStateChanged)
+	public void onMenuEntryAdded(MenuEntryAdded e)
 	{
-		if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
-		{
-
+		NPC npc = e.getMenuEntry().getNpc();
+		if(npc != null) {
+			MenuEntry newEntry = client.createMenuEntry(-1);
+			newEntry.setOption("Copy");
+			newEntry.setTarget(npc.getName());
+			newEntry.setIdentifier(npc.getId());
 		}
 	}
 
 	@Subscribe
-	public void
+	public void onMenuOptionClicked(MenuOptionClicked e)
+	{
+		if(e.getMenuOption().equals("Copy")) {
+			log.info(e.getMenuEntry().getIdentifier()+"");
+			configManager.setConfiguration("example", "npc", e.getMenuEntry().getIdentifier());
+			NPC npc = client.getNpcs().stream().filter(n -> n.getId() == e.getMenuEntry().getIdentifier()).collect(Collectors.toList()).get(0);
+			client.getLocalPlayer().setIdlePoseAnimation(npc.getIdlePoseAnimation());
+			if(npc.getRunAnimation() != -1) {
+
+			}
+			client.getLocalPlayer().setWalkRotate180(npc.getWalkRotate180());
+			client.getLocalPlayer().setWalkRotateLeft(npc.getWalkRotateLeft());
+			client.getLocalPlayer().setWalkRotateRight(npc.getWalkRotateRight());
+			client.getLocalPlayer().setRunAnimation(npc.getRunAnimation());
+			npc.getAnim
+			client.getLocalPlayer().setWalkAnimation(npc.getWalkAnimation());
+		}
+
+	}
 
 	@Subscribe
 	public void onConfigChanged(ConfigChanged e) {

@@ -9,7 +9,7 @@ import net.runelite.client.config.ConfigItem;
 public interface ExampleConfig extends Config
 {
 	@ConfigItem(
-		keyName = "greeting",
+		keyName = "npc",
 		name = "Welcome Greeting",
 		description = "The message to show to the user when they login"
 	)
