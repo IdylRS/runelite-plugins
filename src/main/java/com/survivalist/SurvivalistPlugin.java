@@ -35,7 +35,7 @@ public class SurvivalistPlugin extends Plugin
 {
 	private final int TICKS_PER_DAY = 2400;
 	private final int FIRE_OBJECT_ID = 26185;
-	private final int WARMTH_DISTANCE = 10;
+	private final double WARMTH_DISTANCE = 10;
 
 	@Inject
 	private Client client;
@@ -123,9 +123,9 @@ public class SurvivalistPlugin extends Plugin
 			int fireDistance = checkForFire();
 			if(fireDistance >= 0) {
 				statusEffects.put(StatusEffect.WARM, 1);
-				int brightness = 100 - (fireDistance / WARMTH_DISTANCE)*100;
+				double brightness = 110 - (fireDistance / WARMTH_DISTANCE)*100;
 				log.info("distance from fire: "+fireDistance+"... brightness: "+brightness);
-				this.overlay.setOpacity(TimeOfDay.NIGHT.getDarkness()+brightness);
+				this.overlay.setOpacity((int) (TimeOfDay.NIGHT.getDarkness()+brightness));
 			}
 			else {
 				statusEffects.put(StatusEffect.COLD, 1);
