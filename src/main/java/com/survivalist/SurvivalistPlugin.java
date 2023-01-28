@@ -36,6 +36,7 @@ public class SurvivalistPlugin extends Plugin
 {
 	private final int TICKS_PER_DAY = 2400;
 	private final int MAX_LIFE_POINTS = 1000;
+	private final int MAX_HUNGER = 100;
 	private final int FIRE_OBJECT_ID = 26185;
 	private final double WARMTH_DISTANCE = 10;
 
@@ -63,6 +64,8 @@ public class SurvivalistPlugin extends Plugin
 	private int gameTime = 500;
 	@Getter
 	private int lifePoints = 1000;
+	@Getter
+	private int hunger = 100;
 
 	@Getter
 	private final HashMap<StatusEffect, Integer> statusEffects = new HashMap<>();
@@ -148,6 +151,7 @@ public class SurvivalistPlugin extends Plugin
 		}
 
 		checkWeight();
+		updateHunger();
 		updateLifePoints();
 	}
 
@@ -217,6 +221,12 @@ public class SurvivalistPlugin extends Plugin
 			if(statusEffects.get(effect) > 0) {
 				lifePoints = Math.max(0, Math.min(effect.getLpPerTick()+lifePoints, MAX_LIFE_POINTS));
 			}
+		}
+	}
+
+	private void updateHunger() {
+		if(this.gameTime % 3 == 0) {
+			hunger = Math.max(0, Math.min(MAX_HUNGER, hunger-1));
 		}
 	}
 

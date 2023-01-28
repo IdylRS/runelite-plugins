@@ -34,6 +34,7 @@ public class SurvivalistOverlay extends OverlayPanel {
     public Dimension render(Graphics2D graphics) {
         graphics.setFont(FontManager.getRunescapeFont());
         TimeOfDay tod = TimeOfDay.getTimeOfDay(plugin.getGameTime());
+        Hunger hunger = Hunger.getHunger(plugin.getHunger());
 
         lifePointsComponent.setRight(plugin.getLifePoints()+"LP");
         lifePointsComponent.setRightColor(getLifePointsColor(plugin.getLifePoints()));
@@ -41,17 +42,10 @@ public class SurvivalistOverlay extends OverlayPanel {
         timeOfDayComponent.setRight(tod.getName());
         timeOfDayComponent.setRightColor(getTimeOfDayColor(tod));
 
-        hungerComponent.setRight("Hungry");
-        hungerComponent.setRightColor(getHungerColor(100));
+        hungerComponent.setRight(hunger.getName());
+        hungerComponent.setRightColor(hunger.getColor());
 
         return super.render(graphics);
-    }
-
-    private Color getHungerColor(int hunger) {
-        if(hunger >= 80) return Color.GREEN;
-        else if(hunger >= 60) return Color.YELLOW;
-        else if (hunger >= 30) return Color.ORANGE;
-        else return Color.RED;
     }
 
     private Color getTimeOfDayColor(TimeOfDay tod) {
