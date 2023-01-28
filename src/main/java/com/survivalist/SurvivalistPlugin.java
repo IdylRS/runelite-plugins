@@ -23,6 +23,7 @@ import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 import org.lwjgl.system.linux.Stat;
 
+import java.sql.Time;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 
@@ -54,7 +55,7 @@ public class SurvivalistPlugin extends Plugin
 	private Widget overlay;
 
 	@Getter
-	private int gameTime = 0;
+	private int gameTime = 500;
 
 	@Getter
 	private final HashMap<StatusEffect, Integer> statusEffects = new HashMap<>();
@@ -63,6 +64,11 @@ public class SurvivalistPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
+		if(client.getGameState() == GameState.LOGGED_IN) {
+			if(this.overlay != null) this.overlay.setHidden(false);
+			else clientThread.invokeLater(this::createNightTimeOverlay);
+		}
+
 		for(StatusEffect effect : StatusEffect.values()) {
 			statusEffects.put(effect, 0);
 			statusEffectInfoboxs.put(effect, new StatusEffectInfobox(effect, itemManager.getImage(effect.getItemIconID()), this));
@@ -76,6 +82,8 @@ public class SurvivalistPlugin extends Plugin
 		for(StatusEffectInfobox effectInfobox : statusEffectInfoboxs.values()) {
 			infoBoxManager.removeInfoBox(effectInfobox);
 		}
+
+		if(this.overlay != null) this.overlay.setHidden(true);
 	}
 
 	@Subscribe
@@ -95,6 +103,8 @@ public class SurvivalistPlugin extends Plugin
 
 	@Subscribe
 	public void onGameTick(GameTick e) {
+		decrementStatusEffects();
+
 		this.gameTime = (this.gameTime+1) % TICKS_PER_DAY;
 		TimeOfDay tod = TimeOfDay.getTimeOfDay(this.gameTime);
 
@@ -113,7 +123,8 @@ public class SurvivalistPlugin extends Plugin
 			int fireDistance = checkForFire();
 			if(fireDistance >= 0) {
 				statusEffects.put(StatusEffect.WARM, 1);
-				int brightness = 100 - fireDistance * 3;
+				int brightness = 100 - (fireDistance / WARMTH_DISTANCE)*100;
+				log.info("distance from fire: "+fireDistance+"... brightness: "+brightness);
 				this.overlay.setOpacity(TimeOfDay.NIGHT.getDarkness()+brightness);
 			}
 			else {
@@ -125,7 +136,6 @@ public class SurvivalistPlugin extends Plugin
 		}
 
 		checkWeight();
-		decrementStatusEffects();
 	}
 
 	@Subscribe
@@ -139,7 +149,7 @@ public class SurvivalistPlugin extends Plugin
 		Widget parent = client.getWidget(548, 26);
 		overlay = client.getWidget(548, 26).createChild(WidgetType.RECTANGLE);
 		overlay.setFilled(true);
-		overlay.setOpacity(255);
+		overlay.setOpacity(TimeOfDay.getTimeOfDay(this.gameTime).getDarkness());
 		overlay.setWidthMode(1);
 		overlay.setHeightMode(1);
 		overlay.setXPositionMode(1);

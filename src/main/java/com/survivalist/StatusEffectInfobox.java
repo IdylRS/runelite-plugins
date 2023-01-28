@@ -13,11 +13,13 @@ public class StatusEffectInfobox extends InfoBox {
         super(image, plugin);
         this.plugin = plugin;
         this.effect = effect;
+
+        this.setTooltip(effect.getName());
     }
 
     @Override
     public String getText() {
-        return plugin.getStatusEffects().get(effect)+"";
+        return effect.isShowTicksRemaining() ? plugin.getStatusEffects().get(effect)+"" : "";
     }
 
     @Override
