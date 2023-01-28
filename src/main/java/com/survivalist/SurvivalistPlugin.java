@@ -19,6 +19,7 @@ import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.task.Schedule;
+import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 import org.lwjgl.system.linux.Stat;
@@ -34,6 +35,7 @@ import java.util.HashMap;
 public class SurvivalistPlugin extends Plugin
 {
 	private final int TICKS_PER_DAY = 2400;
+	private final int MAX_LIFE_POINTS = 1000;
 	private final int FIRE_OBJECT_ID = 26185;
 	private final double WARMTH_DISTANCE = 10;
 
@@ -47,6 +49,9 @@ public class SurvivalistPlugin extends Plugin
 	private InfoBoxManager infoBoxManager;
 
 	@Inject
+	private OverlayManager overlayManager;
+
+	@Inject
 	private ItemManager itemManager;
 
 	@Inject
@@ -56,14 +61,20 @@ public class SurvivalistPlugin extends Plugin
 
 	@Getter
 	private int gameTime = 500;
+	@Getter
+	private int lifePoints = 1000;
 
 	@Getter
 	private final HashMap<StatusEffect, Integer> statusEffects = new HashMap<>();
 	private final HashMap<StatusEffect, StatusEffectInfobox> statusEffectInfoboxs = new HashMap<>();
 
+	private SurvivalistOverlay survivalistOverlay;
+
 	@Override
 	protected void startUp() throws Exception
 	{
+		survivalistOverlay = new SurvivalistOverlay(this);
+		overlayManager.add(survivalistOverlay);
 		if(client.getGameState() == GameState.LOGGED_IN) {
 			if(this.overlay != null) this.overlay.setHidden(false);
 			else clientThread.invokeLater(this::createNightTimeOverlay);
@@ -83,6 +94,8 @@ public class SurvivalistPlugin extends Plugin
 			infoBoxManager.removeInfoBox(effectInfobox);
 		}
 
+		overlayManager.remove(survivalistOverlay);
+		survivalistOverlay = null;
 		if(this.overlay != null) this.overlay.setHidden(true);
 	}
 
@@ -124,7 +137,6 @@ public class SurvivalistPlugin extends Plugin
 			if(fireDistance >= 0) {
 				statusEffects.put(StatusEffect.WARM, 1);
 				double brightness = 110 - (fireDistance / WARMTH_DISTANCE)*100;
-				log.info("distance from fire: "+fireDistance+"... brightness: "+brightness);
 				this.overlay.setOpacity((int) (TimeOfDay.NIGHT.getDarkness()+brightness));
 			}
 			else {
@@ -136,6 +148,7 @@ public class SurvivalistPlugin extends Plugin
 		}
 
 		checkWeight();
+		updateLifePoints();
 	}
 
 	@Subscribe
@@ -195,6 +208,14 @@ public class SurvivalistPlugin extends Plugin
 		for(StatusEffect effect : statusEffects.keySet()) {
 			if(statusEffects.get(effect) > 0) {
 				statusEffects.put(effect, statusEffects.get(effect)-1);
+			}
+		}
+	}
+
+	private void updateLifePoints() {
+		for(StatusEffect effect : statusEffects.keySet()) {
+			if(statusEffects.get(effect) > 0) {
+				lifePoints = Math.max(0, Math.min(effect.getLpPerTick()+lifePoints, MAX_LIFE_POINTS));
 			}
 		}
 	}
