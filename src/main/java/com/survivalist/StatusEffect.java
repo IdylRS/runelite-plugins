@@ -1,7 +1,9 @@
 package com.survivalist;
 
+import lombok.Getter;
 import net.runelite.api.ItemID;
 
+@Getter
 public enum StatusEffect {
     HUNGRY("Hungry", -1, ItemID.COOKED_MEAT),
     STARVING("Starving", -2, ItemID.COOKED_MEAT),
