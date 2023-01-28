@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetType;
@@ -96,7 +97,6 @@ public class SurvivalistPlugin extends Plugin
 	public void onGameTick(GameTick e) {
 		this.gameTime = (this.gameTime+1) % TICKS_PER_DAY;
 		TimeOfDay tod = TimeOfDay.getTimeOfDay(this.gameTime);
-		decrementStatusEffects();
 
 		if(this.overlay != null) {
 			int targetDarkness = tod.getDarkness();
@@ -123,10 +123,17 @@ public class SurvivalistPlugin extends Plugin
 		else {
 			statusEffects.put(StatusEffect.COLD, 0);
 		}
+
+		checkWeight();
+		decrementStatusEffects();
 	}
 
 	@Subscribe
-	public
+	public void onItemContainerChanged(ItemContainerChanged e) {
+		if(e.getContainerId() == InventoryID.INVENTORY.getId() || e.getContainerId() == InventoryID.EQUIPMENT.getId()) {
+			checkWeight();
+		}
+	}
 
 	private void createNightTimeOverlay() {
 		Widget parent = client.getWidget(548, 26);
@@ -162,6 +169,16 @@ public class SurvivalistPlugin extends Plugin
 		}
 
 		return -1;
+	}
+
+	private void checkWeight() {
+		int weight = client.getWeight();
+		int agilityLevel = client.getRealSkillLevel(Skill.AGILITY);
+		int maxWeight = 10 + (int) Math.floor(agilityLevel/2);
+
+		if(weight > maxWeight) {
+			statusEffects.put(StatusEffect.OVERWEIGHT, 1);
+		}
 	}
 
 	private void decrementStatusEffects() {
