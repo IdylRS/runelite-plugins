@@ -2,9 +2,6 @@ package com.survivalist;
 
 import com.google.gson.reflect.TypeToken;
 import com.google.inject.Provides;
-import javax.inject.Inject;
-import javax.swing.*;
-
 import com.survivalist.ui.UIButton;
 import com.survivalist.ui.UILabel;
 import lombok.Getter;
@@ -23,18 +20,17 @@ import net.runelite.client.events.NpcLootReceived;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
-import net.runelite.client.task.Schedule;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 
+import javax.inject.Inject;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 import static net.runelite.http.api.RuneLiteAPI.GSON;
 
@@ -110,6 +106,7 @@ public class SurvivalistPlugin extends Plugin
 		if(client.getGameState() == GameState.LOGGED_IN) {
 			if(this.overlay != null) this.overlay.setHidden(false);
 			else clientThread.invokeLater(this::createNightTimeOverlay);
+			setupPlayerFile();
 		}
 	}
 
@@ -123,6 +120,8 @@ public class SurvivalistPlugin extends Plugin
 
 		overlayManager.remove(survivalistOverlay);
 		overlayManager.remove(itemOverlay);
+		showPrayers();
+		showMagic();
 		itemOverlay = null;
 		survivalistOverlay = null;
 		if(this.overlay != null) this.overlay.setHidden(true);
@@ -169,6 +168,10 @@ public class SurvivalistPlugin extends Plugin
 		try {
 			String json = new Scanner(playerFile).useDelimiter("\\Z").next();
 			unlockData = GSON.fromJson(json, new TypeToken<UnlockData>() {}.getType());
+
+			if(!unlockData.isMagicUnlocked() && magicLocked != null) hideMagic();
+			if(!unlockData.isPrayerUnlocked() && prayerLocked != null) hideMagic();
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -407,7 +410,10 @@ public class SurvivalistPlugin extends Plugin
 	@Subscribe
 	public void onNpcLootReceived(NpcLootReceived e) {
 		if(client.getVarbitValue(Varbits.IN_WILDERNESS) == 1) {
-			addGroundItem(e.getNpc().getLocalLocation(), Skill.PRAYER);
+			double roll = Math.random()*1000;
+			if(roll < e.getNpc().getCombatLevel()) {
+				addGroundItem(e.getNpc().getLocalLocation(), Skill.PRAYER);
+			}
 		}
 	}
 
@@ -509,8 +515,7 @@ public class SurvivalistPlugin extends Plugin
 	}
 
 	boolean isItemUnlocked(int itemID) {
-		List<String> prefixes = Age.getItemPrefixes(config.age());
-		prefixes.addAll(PREFIX_WHITELIST);
+		List<String> prefixes = Age.getIllegalItemPrefixes(config.age());
 
 		ItemComposition itemComposition = client.getItemDefinition(itemID);
 		String name = itemComposition.getName().toLowerCase();
@@ -528,10 +533,10 @@ public class SurvivalistPlugin extends Plugin
 		if(!valid) return true;
 
 		for(String prefix : prefixes) {
-			if(name.startsWith(prefix.toLowerCase())) return true;
+			if(name.startsWith(prefix.toLowerCase())) return false;
 		}
 
-		return false;
+		return true;
 	}
 
 	private void addLootbeam(WorldPoint worldPoint, Color color)
