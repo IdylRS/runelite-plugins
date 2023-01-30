@@ -4,16 +4,16 @@ import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 
-@ConfigGroup("example")
+@ConfigGroup("survivalist")
 public interface SurvivalistConfig extends Config
 {
 	@ConfigItem(
-		keyName = "greeting",
-		name = "Welcome Greeting",
-		description = "The message to show to the user when they login"
+		keyName = "age",
+		name = "Age",
+		description = "The age you are currently in"
 	)
-	default String greeting()
+	default Age age()
 	{
-		return "Hello";
+		return Age.STEEL_AGE;
 	}
 }

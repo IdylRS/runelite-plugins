@@ -4,19 +4,23 @@ import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.overlay.*;
 import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.PanelComponent;
+import net.runelite.client.ui.overlay.components.TitleComponent;
 
 import java.awt.*;
 import java.util.Arrays;
 
 public class SurvivalistOverlay extends OverlayPanel {
     private SurvivalistPlugin plugin;
+    private SurvivalistConfig config;
 
+    private final TitleComponent titleComponent;
     private final LineComponent timeOfDayComponent;
     private final LineComponent hungerComponent;
     private final LineComponent lifePointsComponent;
 
-    public SurvivalistOverlay(SurvivalistPlugin plugin) {
+    public SurvivalistOverlay(SurvivalistPlugin plugin, SurvivalistConfig config) {
         this.plugin = plugin;
+        this.config = config;
 
         setLayer(OverlayLayer.ABOVE_WIDGETS);
         setPriority(OverlayPriority.HIGH);
@@ -25,6 +29,7 @@ public class SurvivalistOverlay extends OverlayPanel {
         timeOfDayComponent = LineComponent.builder().left("Time of Day:").right("").build();
         hungerComponent = LineComponent.builder().left("Hunger:").right("").build();
         lifePointsComponent = LineComponent.builder().left("Life Points:").right("").build();
+        titleComponent = TitleComponent.builder().text(config.age().name()).build();
 
         panelComponent.getChildren().addAll(Arrays.asList(lifePointsComponent, timeOfDayComponent, hungerComponent));
         setClearChildren(false);

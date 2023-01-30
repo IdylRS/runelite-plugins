@@ -20,8 +20,7 @@ import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 
 import java.sql.Time;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @PluginDescriptor(
@@ -34,6 +33,8 @@ public class SurvivalistPlugin extends Plugin
 	private final int MAX_HUNGER = 100;
 	private final int FIRE_OBJECT_ID = 26185;
 	private final double WARMTH_DISTANCE = 10;
+
+	private final List<String> PREFIX_WHITELIST = Arrays.asList("necklace", "ring", "amulet", "tiara", "bracelet", "boots of lightness", "graceful");
 
 	@Inject
 	private Client client;
@@ -69,6 +70,7 @@ public class SurvivalistPlugin extends Plugin
 	private final ItemStatChanges itemStats = new ItemStatChanges();
 
 	private SurvivalistOverlay survivalistOverlay;
+	private SurvivalistItemOverlay itemOverlay;
 
 	private int usingID = -1;
 
@@ -78,7 +80,9 @@ public class SurvivalistPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
-		survivalistOverlay = new SurvivalistOverlay(this);
+		survivalistOverlay = new SurvivalistOverlay(this, config);
+		itemOverlay = new SurvivalistItemOverlay(itemManager, this);
+		overlayManager.add(itemOverlay);
 		overlayManager.add(survivalistOverlay);
 		if(client.getGameState() == GameState.LOGGED_IN) {
 			if(this.overlay != null) this.overlay.setHidden(false);
@@ -100,6 +104,8 @@ public class SurvivalistPlugin extends Plugin
 		}
 
 		overlayManager.remove(survivalistOverlay);
+		overlayManager.remove(itemOverlay);
+		itemOverlay = null;
 		survivalistOverlay = null;
 		if(this.overlay != null) this.overlay.setHidden(true);
 	}
@@ -207,8 +213,10 @@ public class SurvivalistPlugin extends Plugin
 		else if(e.getMenuOption().equals("Eat")) {
 			e.consume();
 		}
-
-		if(e.getMenuOption().equals("Use")) {
+		else if(e.getMenuOption().equals("Equip") || e.getMenuOption().equals("Wear") || e.getMenuOption().equals("Wield")) {
+			if(!isItemUnlocked(e.getItemId())) e.consume();
+		}
+		else if(e.getMenuOption().equals("Use")) {
 			String name = client.getItemDefinition(e.getItemId()).getName();
 			TimeOfDay tod = TimeOfDay.getTimeOfDay(this.gameTime);
 
@@ -350,6 +358,32 @@ public class SurvivalistPlugin extends Plugin
 		else {
 			statusEffects.put(StatusEffect.INJURED, 0);
 		}
+	}
+
+	boolean isItemUnlocked(int itemID) {
+		List<String> prefixes = Age.getItemPrefixes(config.age());
+		prefixes.addAll(PREFIX_WHITELIST);
+
+		ItemComposition itemComposition = client.getItemDefinition(itemID);
+		String name = itemComposition.getName().toLowerCase();
+
+		boolean valid = false;
+		for(String action : itemComposition.getInventoryActions()) {
+			if(action == null) continue;
+
+			if (action.equals("Wield") || action.equals("Equip") || action.equals("Wear")) {
+				valid = true;
+				break;
+			}
+		}
+
+		if(!valid) return true;
+
+		for(String prefix : prefixes) {
+			if(name.startsWith(prefix.toLowerCase())) return true;
+		}
+
+		return false;
 	}
 
 	@Provides
