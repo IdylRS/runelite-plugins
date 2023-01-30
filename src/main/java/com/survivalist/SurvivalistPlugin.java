@@ -72,6 +72,8 @@ public class SurvivalistPlugin extends Plugin
 	private int usingID = -1;
 
 	private int craftingLevel = -1;
+	private int prayerLevel = -1;
+	private int prayerPoints = -1;
 
 	@Override
 	protected void startUp() throws Exception
@@ -165,11 +167,23 @@ public class SurvivalistPlugin extends Plugin
 					clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You can now craft a bed to sleep at night by using 2 logs and 2 wool on each other.", ""));
 				}
 
-				craftingLevel = level;
 			}
-			else {
-				craftingLevel = level;
+
+			craftingLevel = level;
+		}
+
+		if(e.getSkill() == Skill.PRAYER) {
+			int level = client.getRealSkillLevel(Skill.PRAYER);
+			int boosted = client.getBoostedSkillLevel(Skill.PRAYER);
+
+			if(prayerLevel != -1 && boosted >= prayerPoints) {
+				if(level >= 15) {
+					statusEffects.put(StatusEffect.PIOUS, 3*level);
+				}
 			}
+
+			prayerLevel = level;
+			prayerPoints = boosted;
 		}
 	}
 
