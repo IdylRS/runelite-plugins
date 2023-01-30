@@ -7,8 +7,8 @@ import net.runelite.api.ItemID;
 public enum StatusEffect {
     HUNGRY("Hungry", -1, ItemID.COOKED_MEAT, false),
     STARVING("Starving", -2, ItemID.COOKED_MEAT, false),
-    COLD("Cold", -1,  ItemID.ICE_DIAMOND, false),
-    INJURED("Injured", -1, ItemID.BLOODY_KNIFE, false),
+    COLD("Cold", -2,  ItemID.ICE_DIAMOND, false),
+    INJURED("Injured", -5, ItemID.BLOODY_KNIFE, false),
     OVERWEIGHT("Overweight", -1, ItemID.THIEVING_BAG, false),
     FULL("Full", 1, ItemID.COOKED_MEAT, false),
     WARM("Warm", 1, ItemID.FIRE_FEATHER, false),

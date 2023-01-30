@@ -6,10 +6,7 @@ import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
-import net.runelite.api.events.GameStateChanged;
-import net.runelite.api.events.GameTick;
-import net.runelite.api.events.ItemContainerChanged;
-import net.runelite.api.events.WidgetLoaded;
+import net.runelite.api.events.*;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetType;
 import net.runelite.client.callback.ClientThread;
@@ -18,14 +15,9 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
-import net.runelite.client.task.Schedule;
-import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
-import org.lwjgl.system.linux.Stat;
 
-import java.sql.Time;
-import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 
 @Slf4j
@@ -65,11 +57,13 @@ public class SurvivalistPlugin extends Plugin
 	@Getter
 	private int lifePoints = 1000;
 	@Getter
-	private int hunger = 100;
+	private int hunger = 30;
 
 	@Getter
 	private final HashMap<StatusEffect, Integer> statusEffects = new HashMap<>();
 	private final HashMap<StatusEffect, StatusEffectInfobox> statusEffectInfoboxs = new HashMap<>();
+
+	private final ItemStatChanges itemStats = new ItemStatChanges();
 
 	private SurvivalistOverlay survivalistOverlay;
 
@@ -152,6 +146,7 @@ public class SurvivalistPlugin extends Plugin
 
 		checkWeight();
 		updateHunger();
+		updateInjury();
 		updateLifePoints();
 	}
 
@@ -159,6 +154,13 @@ public class SurvivalistPlugin extends Plugin
 	public void onItemContainerChanged(ItemContainerChanged e) {
 		if(e.getContainerId() == InventoryID.INVENTORY.getId() || e.getContainerId() == InventoryID.EQUIPMENT.getId()) {
 			checkWeight();
+		}
+	}
+
+	@Subscribe
+	public void onMenuOptionClicked(MenuOptionClicked e) {
+		if(e.getMenuOption().equals("Eat")) {
+			addHunger(itemStats.get(e.getItemId()));
 		}
 	}
 
@@ -227,6 +229,32 @@ public class SurvivalistPlugin extends Plugin
 	private void updateHunger() {
 		if(this.gameTime % 3 == 0) {
 			hunger = Math.max(0, Math.min(MAX_HUNGER, hunger-1));
+		}
+
+		if(Hunger.getHunger(this.hunger) == Hunger.HUNGRY) {
+			statusEffects.put(StatusEffect.STARVING, 1);
+		}
+		if(Hunger.getHunger(this.hunger) == Hunger.STARVING) {
+			statusEffects.put(StatusEffect.STARVING, 1);
+		}
+		else {
+			statusEffects.put(StatusEffect.HUNGRY, 0);
+			statusEffects.put(StatusEffect.STARVING, 0);
+		}
+	}
+
+	private void addHunger(int amount) {
+		this.hunger = Math.max(0, Math.min(MAX_HUNGER, hunger+amount*5));
+	}
+
+	private void updateInjury() {
+		double ratio = (double) client.getLocalPlayer().getHealthRatio() / (double) client.getLocalPlayer().getHealthScale();
+
+		if(ratio <= .2) {
+			statusEffects.put(StatusEffect.INJURED, 1);
+		}
+		else {
+			statusEffects.put(StatusEffect.INJURED, 0);
 		}
 	}
 

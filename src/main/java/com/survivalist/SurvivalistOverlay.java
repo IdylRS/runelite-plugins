@@ -36,7 +36,7 @@ public class SurvivalistOverlay extends OverlayPanel {
         TimeOfDay tod = TimeOfDay.getTimeOfDay(plugin.getGameTime());
         Hunger hunger = Hunger.getHunger(plugin.getHunger());
 
-        lifePointsComponent.setRight(plugin.getLifePoints()+"LP");
+        lifePointsComponent.setRight((int) Math.ceil(plugin.getLifePoints()/10)+"LP");
         lifePointsComponent.setRightColor(getLifePointsColor(plugin.getLifePoints()));
 
         timeOfDayComponent.setRight(tod.getName());

@@ -4,8 +4,12 @@ import net.runelite.client.ui.overlay.infobox.InfoBox;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.util.Arrays;
+import java.util.List;
 
 public class StatusEffectInfobox extends InfoBox {
+    private static final List<StatusEffect> skipRender = Arrays.asList(StatusEffect.STARVING, StatusEffect.HUNGRY);
+
     private StatusEffect effect;
     private SurvivalistPlugin plugin;
 
@@ -29,6 +33,6 @@ public class StatusEffectInfobox extends InfoBox {
 
     @Override
     public boolean render() {
-        return plugin.getStatusEffects().get(effect) > 0;
+        return plugin.getStatusEffects().get(effect) > 0 && !skipRender.contains(effect);
     }
 }

@@ -7,7 +7,7 @@ public enum TimeOfDay {
     DAWN("Dawn", 500, 700, 150),
     DAY("Day", 700, 1800, 255),
     DUSK("Dusk", 1800, 2000, 120),
-    NIGHT("Night", 20, 500, 25);
+    NIGHT("Night", 2000, 500, 25);
 
     private String name;
     private int startTick;
