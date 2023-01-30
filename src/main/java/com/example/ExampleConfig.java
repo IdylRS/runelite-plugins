@@ -8,12 +8,12 @@ import net.runelite.client.config.ConfigItem;
 public interface ExampleConfig extends Config
 {
 	@ConfigItem(
-		keyName = "greeting",
+		keyName = "ip",
 		name = "Welcome Greeting",
 		description = "The message to show to the user when they login"
 	)
-	default String greeting()
+	default String ip()
 	{
-		return "Hello";
+		return "192.168.0.204";
 	}
 }
