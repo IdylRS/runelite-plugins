@@ -21,6 +21,7 @@ import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 
 import java.sql.Time;
 import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @PluginDescriptor(
@@ -71,8 +72,7 @@ public class SurvivalistPlugin extends Plugin
 
 	private int usingID = -1;
 
-	private int craftingLevel = -1;
-	private int prayerLevel = -1;
+	private Map<Skill, Integer> skillLevels = new HashMap<>();
 	private int prayerPoints = -1;
 
 	@Override
@@ -114,8 +114,9 @@ public class SurvivalistPlugin extends Plugin
 	@Subscribe
 	public void onGameStateChanged(GameStateChanged gameStateChanged)
 	{
-		if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
+		if (gameStateChanged.getGameState() == GameState.LOGIN_SCREEN)
 		{
+			skillLevels = new HashMap<>();
 		}
 	}
 
@@ -160,31 +161,35 @@ public class SurvivalistPlugin extends Plugin
 
 	@Subscribe
 	public void onStatChanged(StatChanged e) {
+		if(skillLevels.get(e.getSkill()) != null) {
+			if(e.getLevel() > skillLevels.get(e.getSkill())) {
+				statusEffects.put(StatusEffect.PROUD, 200);
+			}
+		}
+
 		if(e.getSkill() == Skill.CRAFTING) {
 			int level = client.getRealSkillLevel(Skill.CRAFTING);
-			if(craftingLevel != -1) {
+			if(skillLevels.get(Skill.CRAFTING) != null) {
 				if(level == 15) {
 					clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You can now craft a bed to sleep at night by using 2 logs and 2 wool on each other.", ""));
 				}
 
 			}
-
-			craftingLevel = level;
 		}
-
 		if(e.getSkill() == Skill.PRAYER) {
 			int level = client.getRealSkillLevel(Skill.PRAYER);
 			int boosted = client.getBoostedSkillLevel(Skill.PRAYER);
 
-			if(prayerLevel != -1 && boosted >= prayerPoints) {
+			if(skillLevels.get(Skill.PRAYER) != null && boosted >= prayerPoints) {
 				if(level >= 15) {
-					statusEffects.put(StatusEffect.PIOUS, 3*level);
+					statusEffects.put(StatusEffect.PIOUS, 2*level);
 				}
 			}
 
-			prayerLevel = level;
 			prayerPoints = boosted;
 		}
+
+		skillLevels.put(e.getSkill(), e.getLevel());
 	}
 
 	@Subscribe
