@@ -1,26 +1,42 @@
 package com.survivalist;
 
+import com.google.gson.reflect.TypeToken;
 import com.google.inject.Provides;
 import javax.inject.Inject;
+import javax.swing.*;
 
+import com.survivalist.ui.UIButton;
+import com.survivalist.ui.UILabel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetType;
+import net.runelite.client.RuneLite;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.NpcLootReceived;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
-import net.runelite.client.plugins.cluescrolls.clues.item.MultipleOfItemRequirement;
+import net.runelite.client.task.Schedule;
+import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 
-import java.sql.Time;
+import java.awt.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.List;
+
+import static net.runelite.http.api.RuneLiteAPI.GSON;
 
 @Slf4j
 @PluginDescriptor(
@@ -28,11 +44,15 @@ import java.util.*;
 )
 public class SurvivalistPlugin extends Plugin
 {
-	private final int TICKS_PER_DAY = 2400;
-	private final int MAX_LIFE_POINTS = 1000;
-	private final int MAX_HUNGER = 100;
+	public static final String CONFIG_KEY = "survivalist";
+	public static final String DATA_FOLDER_NAME = "survivalist";
+
 	private final int FIRE_OBJECT_ID = 26185;
 	private final double WARMTH_DISTANCE = 10;
+	private static final int PRAYER_TAB = 35454980;
+	private static final int PRAYER_ORB = 10485777;
+	private static final int QUICK_PRAYER = 10485779;
+	private static final int MAGIC_TAB = 14286849;
 
 	private final List<String> PREFIX_WHITELIST = Arrays.asList("necklace", "ring", "amulet", "tiara", "bracelet", "boots of lightness", "graceful");
 
@@ -55,16 +75,14 @@ public class SurvivalistPlugin extends Plugin
 	private SurvivalistConfig config;
 
 	private Widget overlay;
+	private UILabel prayerLocked;
+	private UILabel magicLocked;
+	private UIButton quickPrayer;
 
 	@Getter
-	private int gameTime = 0;
-	@Getter
-	private int lifePoints = 1000;
-	@Getter
-	private int hunger = 30;
+	private UnlockData unlockData;
+	private File playerFile;
 
-	@Getter
-	private final HashMap<StatusEffect, Integer> statusEffects = new HashMap<>();
 	private final HashMap<StatusEffect, StatusEffectInfobox> statusEffectInfoboxs = new HashMap<>();
 
 	private final ItemStatChanges itemStats = new ItemStatChanges();
@@ -77,6 +95,9 @@ public class SurvivalistPlugin extends Plugin
 	private Map<Skill, Integer> skillLevels = new HashMap<>();
 	private int prayerPoints = -1;
 
+	private Map<WorldPoint, Lootbeam> lootbeams = new HashMap<>();
+	private Map<WorldPoint, Scroll> scrolls = new HashMap<>();
+
 	@Override
 	protected void startUp() throws Exception
 	{
@@ -88,17 +109,12 @@ public class SurvivalistPlugin extends Plugin
 			if(this.overlay != null) this.overlay.setHidden(false);
 			else clientThread.invokeLater(this::createNightTimeOverlay);
 		}
-
-		for(StatusEffect effect : StatusEffect.values()) {
-			statusEffects.put(effect, 0);
-			statusEffectInfoboxs.put(effect, new StatusEffectInfobox(effect, itemManager.getImage(effect.getItemIconID()), this));
-			infoBoxManager.addInfoBox(statusEffectInfoboxs.get(effect));
-		}
 	}
 
 	@Override
 	protected void shutDown() throws Exception
 	{
+		savePlayerData();
 		for(StatusEffectInfobox effectInfobox : statusEffectInfoboxs.values()) {
 			infoBoxManager.removeInfoBox(effectInfobox);
 		}
@@ -108,12 +124,116 @@ public class SurvivalistPlugin extends Plugin
 		itemOverlay = null;
 		survivalistOverlay = null;
 		if(this.overlay != null) this.overlay.setHidden(true);
+
+		for(WorldPoint point : scrolls.keySet()) {
+			removeGroundItem(point);
+			removeLootbeam(point);
+		}
+
+		unlockData = null;
 	}
+
+	/**
+	 * Sets up the playerFile variable, and makes the player file if needed.
+	 */
+	private void setupPlayerFile() {
+		unlockData = new UnlockData();
+
+		for(StatusEffect effect : StatusEffect.values()) {
+			unlockData.getStatusEffects().put(effect, 0);
+			statusEffectInfoboxs.put(effect, new StatusEffectInfobox(effect, itemManager.getImage(effect.getItemIconID()), this));
+			infoBoxManager.addInfoBox(statusEffectInfoboxs.get(effect));
+		}
+
+		File playerFolder = new File(RuneLite.RUNELITE_DIR, DATA_FOLDER_NAME);
+		if (!playerFolder.exists()) {
+			playerFolder.mkdirs();
+		}
+		playerFile = new File(playerFolder, client.getAccountHash() + ".txt");
+		if (!playerFile.exists()) {
+			try {
+				playerFile.createNewFile();
+				unlockDefaults();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} else {
+			loadPlayerData();
+		}
+	}
+
+	private void loadPlayerData() {
+		unlockData = null;
+		try {
+			String json = new Scanner(playerFile).useDelimiter("\\Z").next();
+			unlockData = GSON.fromJson(json, new TypeToken<UnlockData>() {}.getType());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	@Schedule(
+			period = 30,
+			unit = ChronoUnit.SECONDS
+	)
+	private void savePlayerData() {
+		try {
+			PrintWriter w = new PrintWriter(playerFile);
+			String json = GSON.toJson(unlockData);
+			w.println(json);
+			w.close();
+			log.debug("Saving player data");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void unlockDefaults() {
+		unlockData.setDefaults();
+		savePlayerData();
+	}
+
 
 	@Subscribe
 	public void onWidgetLoaded(WidgetLoaded e) {
 		if(e.getGroupId() == 548) {
 			createNightTimeOverlay();
+		}
+		// Prayer menu loaded
+		else if(e.getGroupId() == 160 && quickPrayer == null) {
+			Widget prayerOrb = client.getWidget(PRAYER_ORB);
+			Widget orbWidget = prayerOrb.createChild(-1, WidgetType.GRAPHIC);
+
+			quickPrayer = new UIButton(orbWidget);
+			quickPrayer.setSize(prayerOrb.getWidth(), prayerOrb.getHeight());
+			quickPrayer.setVisibility(false);
+		}
+		else if(e.getGroupId() == 541) {
+			Widget container = client.getWidget(35454976);
+			Widget prayerLabel = container.createChild(-1, WidgetType.TEXT);
+			prayerLocked = new UILabel(prayerLabel);
+			prayerLocked.setText("You must unlock the Prayer skill to use your prayers.");
+			prayerLocked.setColour(ColorScheme.BRAND_ORANGE.getRGB());
+			prayerLocked.setSize(150, 75);
+			prayerLocked.setPosition(getCenterX(container, 150), getCenterY(container, 75));
+			prayerLocked.setVisibility(false);
+
+			if(unlockData.isPrayerUnlocked()) return;
+			hidePrayers();
+		}
+		// Magic tab
+		else if(e.getGroupId() == 218) {
+			Widget container = client.getWidget(14286848);
+			Widget magicLabel = container.createChild(-1, WidgetType.TEXT);
+			magicLocked = new UILabel(magicLabel);
+			magicLocked.setText("You must unlock the Magic skill to use your spells.");
+			magicLocked.setColour(ColorScheme.BRAND_ORANGE.getRGB());
+			magicLocked.setSize(150, 75);
+			magicLocked.setPosition(getCenterX(container, 150), getCenterY(container, 75));
+			magicLocked.setVisibility(false);
+
+			if(unlockData.isMagicUnlocked()) return;
+			hideMagic();
 		}
 	}
 
@@ -123,6 +243,11 @@ public class SurvivalistPlugin extends Plugin
 		if (gameStateChanged.getGameState() == GameState.LOGIN_SCREEN)
 		{
 			skillLevels = new HashMap<>();
+			unlockData = null;
+		}
+		else if(gameStateChanged.getGameState().equals(GameState.LOGGED_IN)) {
+			if(unlockData == null) setupPlayerFile();
+			else savePlayerData();
 		}
 	}
 
@@ -130,8 +255,8 @@ public class SurvivalistPlugin extends Plugin
 	public void onGameTick(GameTick e) {
 		decrementStatusEffects();
 
-		this.gameTime = (this.gameTime+1) % TICKS_PER_DAY;
-		TimeOfDay tod = TimeOfDay.getTimeOfDay(this.gameTime);
+		unlockData.updateGameTime();
+		TimeOfDay tod = TimeOfDay.getTimeOfDay(unlockData.getGameTime());
 
 		if(this.overlay != null) {
 			int targetDarkness = tod.getDarkness();
@@ -147,29 +272,29 @@ public class SurvivalistPlugin extends Plugin
 		if(tod == TimeOfDay.NIGHT) {
 			int fireDistance = checkForFire();
 			if(fireDistance >= 0) {
-				statusEffects.put(StatusEffect.WARM, 1);
+				unlockData.getStatusEffects().put(StatusEffect.WARM, 1);
 				double brightness = 110 - (fireDistance / WARMTH_DISTANCE)*100;
 				this.overlay.setOpacity((int) (TimeOfDay.NIGHT.getDarkness()+brightness));
 			}
 			else {
-				statusEffects.put(StatusEffect.COLD, 1);
+				unlockData.getStatusEffects().put(StatusEffect.COLD, 1);
 			}
 		}
 		else {
-			statusEffects.put(StatusEffect.COLD, 0);
+			unlockData.getStatusEffects().put(StatusEffect.COLD, 0);
 		}
 
 		checkWeight();
-		updateHunger();
-		updateInjury();
-		updateLifePoints();
+		unlockData.updateHunger();
+		unlockData.updateInjury((double) client.getBoostedSkillLevel(Skill.HITPOINTS) / (double) client.getRealSkillLevel(Skill.HITPOINTS));
+		unlockData.updateLifePoints();
 	}
 
 	@Subscribe
 	public void onStatChanged(StatChanged e) {
 		if(skillLevels.get(e.getSkill()) != null) {
 			if(e.getLevel() > skillLevels.get(e.getSkill())) {
-				statusEffects.put(StatusEffect.PROUD, 200);
+				unlockData.getStatusEffects().put(StatusEffect.PROUD, 200);
 			}
 		}
 
@@ -188,7 +313,7 @@ public class SurvivalistPlugin extends Plugin
 
 			if(skillLevels.get(Skill.PRAYER) != null && boosted >= prayerPoints) {
 				if(level >= 15) {
-					statusEffects.put(StatusEffect.PIOUS, 2*level);
+					unlockData.getStatusEffects().put(StatusEffect.PIOUS, 2*level);
 				}
 			}
 
@@ -206,9 +331,29 @@ public class SurvivalistPlugin extends Plugin
 	}
 
 	@Subscribe
+	public void onMenuEntryAdded(MenuEntryAdded e) {
+		if(e.getOption().startsWith("Walk here")) {
+			Tile tile = client.getSelectedSceneTile();
+			if(tile == null) return;
+
+			Scroll scroll = scrolls.get(tile.getWorldLocation());
+			if(scroll == null) return;
+
+			Color color = getLootbeamColor(scroll.getSkill());
+			String hex = String.format("%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
+
+			client.createMenuEntry(-1)
+					.setTarget("<col="+hex+">Ancient Scroll ("+scroll.getSkill().getName()+")</col>")
+					.setOption("Take")
+					.setType(MenuAction.GROUND_ITEM_FIRST_OPTION)
+					.onClick(ev -> pickUpScroll(tile.getWorldLocation()));
+		}
+	}
+
+	@Subscribe
 	public void onMenuOptionClicked(MenuOptionClicked e) {
-		if(e.getMenuOption().equals("Eat") && statusEffects.get(StatusEffect.EATING) == 0) {
-			addHunger(itemStats.get(e.getItemId()));
+		if(e.getMenuOption().equals("Eat") && unlockData.getStatusEffects().get(StatusEffect.EATING) == 0) {
+			unlockData.addHunger(itemStats.get(e.getItemId()));
 		}
 		else if(e.getMenuOption().equals("Eat")) {
 			e.consume();
@@ -218,7 +363,7 @@ public class SurvivalistPlugin extends Plugin
 		}
 		else if(e.getMenuOption().equals("Use")) {
 			String name = client.getItemDefinition(e.getItemId()).getName();
-			TimeOfDay tod = TimeOfDay.getTimeOfDay(this.gameTime);
+			TimeOfDay tod = TimeOfDay.getTimeOfDay(unlockData.getGameTime());
 
 			if((e.getItemId() == ItemID.WOOL || name.toLowerCase().contains("logs")) && client.getRealSkillLevel(Skill.CRAFTING) >= 15) {
 				if(usingID == -1) usingID = e.getItemId();
@@ -241,9 +386,9 @@ public class SurvivalistPlugin extends Plugin
 						clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You need 2 logs of the same type and 2 wool to sleep.", ""));
 					}
 					else if(checkForFire() > -1){
-						this.gameTime = TimeOfDay.DAWN.getStartTick();
+						unlockData.sleep();
 						clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You craft a makeshift bed and fall fast asleep.", ""));
-						statusEffects.put(StatusEffect.RESTED, 100);
+						unlockData.getStatusEffects().put(StatusEffect.RESTED, 100);
 					}
 					else {
 						clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You must sleep near a fire.", ""));
@@ -255,11 +400,37 @@ public class SurvivalistPlugin extends Plugin
 		}
 	}
 
+	@Subscribe
+	public void onNpcLootReceived(NpcLootReceived e) {
+		if(client.getVarbitValue(Varbits.IN_WILDERNESS) == 1) {
+			addGroundItem(e.getNpc().getLocalLocation(), Skill.PRAYER);
+		}
+	}
+
+	private void pickUpScroll(WorldPoint point) {
+		Skill skill = scrolls.get(point).getSkill();
+
+		if(skill == Skill.MAGIC && !unlockData.isMagicUnlocked()) {
+			unlockData.setMagicUnlocked(true);
+			showMagic();
+		}
+		else if(skill == Skill.PRAYER && !unlockData.isPrayerUnlocked()) {
+			unlockData.setPrayerUnlocked(true);
+			showPrayers();
+		}
+
+		client.playSoundEffect(SoundEffectID.ITEM_PICKUP);
+		removeGroundItem(point);
+		removeLootbeam(point);
+
+		savePlayerData();
+	}
+
 	private void createNightTimeOverlay() {
 		Widget parent = client.getWidget(548, 26);
-		overlay = client.getWidget(548, 26).createChild(WidgetType.RECTANGLE);
+		overlay = parent.createChild(WidgetType.RECTANGLE);
 		overlay.setFilled(true);
-		overlay.setOpacity(TimeOfDay.getTimeOfDay(this.gameTime).getDarkness());
+		overlay.setOpacity(TimeOfDay.getTimeOfDay(unlockData.getGameTime()).getDarkness());
 		overlay.setWidthMode(1);
 		overlay.setHeightMode(1);
 		overlay.setXPositionMode(1);
@@ -297,67 +468,40 @@ public class SurvivalistPlugin extends Plugin
 		int maxWeight = 10 + (int) Math.floor(agilityLevel/2);
 
 		if(weight > maxWeight) {
-			statusEffects.put(StatusEffect.OVERWEIGHT, 1);
+			unlockData.getStatusEffects().put(StatusEffect.OVERWEIGHT, 1);
 		}
 	}
 
 	private void decrementStatusEffects() {
-		for(StatusEffect effect : statusEffects.keySet()) {
-			if(statusEffects.get(effect) > 0) {
-				statusEffects.put(effect, statusEffects.get(effect)-1);
+		for(StatusEffect effect : unlockData.getStatusEffects().keySet()) {
+			if(unlockData.getStatusEffects().get(effect) > 0) {
+				unlockData.getStatusEffects().put(effect, unlockData.getStatusEffects().get(effect)-1);
 			}
 		}
 	}
 
-	private void updateLifePoints() {
-		for(StatusEffect effect : statusEffects.keySet()) {
-			if(statusEffects.get(effect) > 0) {
-				lifePoints = Math.max(0, Math.min(effect.getLpPerTick()+lifePoints, MAX_LIFE_POINTS));
-			}
-		}
+	private void hidePrayers() {
+		client.getWidget(QUICK_PRAYER).setHidden(true);
+		client.getWidget(PRAYER_TAB).setHidden(true);
+		prayerLocked.setVisibility(true);
+		quickPrayer.setVisibility(true);
 	}
 
-	private void updateHunger() {
-		if(this.gameTime % 3 == 0) {
-			hunger = Math.max(0, Math.min(MAX_HUNGER, hunger-1));
-		}
-
-		if(Hunger.getHunger(this.hunger) == Hunger.FULL) {
-			statusEffects.put(StatusEffect.FULL, 1);
-		}
-		else {
-			statusEffects.put(StatusEffect.FULL, 0);
-		}
-
-		if(Hunger.getHunger(this.hunger) == Hunger.HUNGRY) {
-			statusEffects.put(StatusEffect.STARVING, 1);
-		}
-		else if(Hunger.getHunger(this.hunger) == Hunger.STARVING) {
-			statusEffects.put(StatusEffect.STARVING, 1);
-		}
-		else {
-			statusEffects.put(StatusEffect.HUNGRY, 0);
-			statusEffects.put(StatusEffect.STARVING, 0);
-		}
+	private void showPrayers() {
+		client.getWidget(QUICK_PRAYER).setHidden(false);
+		client.getWidget(PRAYER_TAB).setHidden(false);
+		prayerLocked.setVisibility(false);
+		quickPrayer.setVisibility(false);
 	}
 
-	private void addHunger(int amount) {
-		this.hunger = Math.max(0, Math.min(MAX_HUNGER, hunger+amount*5));
-		this.hunger = Math.max(0, Math.min(MAX_HUNGER, hunger+amount*5));
-
-		if(amount > 0)
-			statusEffects.put(StatusEffect.EATING, Math.min(50, amount*2));
+	private void hideMagic() {
+		client.getWidget(MAGIC_TAB).setHidden(true);
+		magicLocked.setVisibility(true);
 	}
 
-	private void updateInjury() {
-		double ratio = (double) client.getBoostedSkillLevel(Skill.HITPOINTS) / (double) client.getRealSkillLevel(Skill.HITPOINTS);
-
-		if(ratio <= .2) {
-			statusEffects.put(StatusEffect.INJURED, 1);
-		}
-		else {
-			statusEffects.put(StatusEffect.INJURED, 0);
-		}
+	private void showMagic() {
+		client.getWidget(MAGIC_TAB).setHidden(false);
+		magicLocked.setVisibility(false);
 	}
 
 	boolean isItemUnlocked(int itemID) {
@@ -385,6 +529,68 @@ public class SurvivalistPlugin extends Plugin
 
 		return false;
 	}
+
+	private void addLootbeam(WorldPoint worldPoint, Color color)
+	{
+		Lootbeam lootbeam = lootbeams.get(worldPoint);
+		if (lootbeam == null)
+		{
+			lootbeam = new Lootbeam(client, clientThread, worldPoint, color, Lootbeam.Style.MODERN);
+			lootbeams.put(worldPoint, lootbeam);
+		}
+		else
+		{
+			lootbeam.setColor(color);
+			lootbeam.setStyle(Lootbeam.Style.MODERN);
+		}
+	}
+
+	private void removeLootbeam(WorldPoint worldPoint)
+	{
+		Lootbeam lootbeam = lootbeams.remove(worldPoint);
+		if (lootbeam != null)
+		{
+			lootbeam.remove();
+		}
+	}
+
+	private void addGroundItem(LocalPoint point, Skill skill) {
+		WorldPoint loc = WorldPoint.fromLocal(client, point);
+		Scroll scroll = new Scroll(client, point, Skill.PRAYER);
+
+		scrolls.put(loc, scroll);
+		addLootbeam(loc, getLootbeamColor(Skill.PRAYER));
+	}
+
+	private void removeGroundItem(WorldPoint point) {
+		Scroll item = scrolls.remove(point);
+		if(item != null) {
+			item.setActive(false);
+		}
+	}
+
+	private void handleLootbeams() {
+		HashMap<WorldPoint, Lootbeam> beamsToDelete = new HashMap<>(lootbeams);
+		beamsToDelete.keySet().forEach(this::removeLootbeam);
+
+		scrolls.keySet().forEach(point -> {
+			Skill skill = scrolls.get(point).getSkill();
+			this.addLootbeam(point, getLootbeamColor(skill));
+		});
+	}
+
+	private Color getLootbeamColor(Skill skill) {
+		return skill.equals(Skill.MAGIC) ? Color.CYAN : Color.YELLOW;
+	}
+
+	public static int getCenterX(Widget window, int width) {
+		return (window.getWidth() / 2) - (width / 2);
+	}
+
+	public static int getCenterY(Widget window, int height) {
+		return (window.getHeight() / 2) - (height / 2);
+	}
+
 
 	@Provides
 	SurvivalistConfig provideConfig(ConfigManager configManager)

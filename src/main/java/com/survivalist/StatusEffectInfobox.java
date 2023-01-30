@@ -23,7 +23,7 @@ public class StatusEffectInfobox extends InfoBox {
 
     @Override
     public String getText() {
-        return effect.isShowTicksRemaining() ? plugin.getStatusEffects().get(effect)+"" : "";
+        return effect.isShowTicksRemaining() ? plugin.getUnlockData().getStatusEffects().get(effect)+"" : "";
     }
 
     @Override
@@ -33,6 +33,6 @@ public class StatusEffectInfobox extends InfoBox {
 
     @Override
     public boolean render() {
-        return plugin.getStatusEffects().get(effect) > 0 && !skipRender.contains(effect);
+        return plugin.getUnlockData().getStatusEffects().get(effect) > 0 && !skipRender.contains(effect);
     }
 }

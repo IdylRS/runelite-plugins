@@ -29,20 +29,20 @@ public class SurvivalistOverlay extends OverlayPanel {
         timeOfDayComponent = LineComponent.builder().left("Time of Day:").right("").build();
         hungerComponent = LineComponent.builder().left("Hunger:").right("").build();
         lifePointsComponent = LineComponent.builder().left("Life Points:").right("").build();
-        titleComponent = TitleComponent.builder().text(config.age().name()).build();
+        titleComponent = TitleComponent.builder().text("Steel Age").build();
 
-        panelComponent.getChildren().addAll(Arrays.asList(lifePointsComponent, timeOfDayComponent, hungerComponent));
+        panelComponent.getChildren().addAll(Arrays.asList(titleComponent, lifePointsComponent, timeOfDayComponent, hungerComponent));
         setClearChildren(false);
     }
 
     @Override
     public Dimension render(Graphics2D graphics) {
         graphics.setFont(FontManager.getRunescapeFont());
-        TimeOfDay tod = TimeOfDay.getTimeOfDay(plugin.getGameTime());
-        Hunger hunger = Hunger.getHunger(plugin.getHunger());
+        TimeOfDay tod = TimeOfDay.getTimeOfDay(plugin.getUnlockData().getGameTime());
+        Hunger hunger = Hunger.getHunger(plugin.getUnlockData().getHunger());
 
-        lifePointsComponent.setRight((int) Math.ceil(plugin.getLifePoints()/10)+"LP");
-        lifePointsComponent.setRightColor(getLifePointsColor(plugin.getLifePoints()));
+        lifePointsComponent.setRight((int) Math.ceil(plugin.getUnlockData().getLifePoints()/10)+"LP");
+        lifePointsComponent.setRightColor(getLifePointsColor(plugin.getUnlockData().getLifePoints()));
 
         timeOfDayComponent.setRight(tod.getName());
         timeOfDayComponent.setRightColor(getTimeOfDayColor(tod));
