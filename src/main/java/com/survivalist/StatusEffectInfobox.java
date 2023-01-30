@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class StatusEffectInfobox extends InfoBox {
-    private static final List<StatusEffect> skipRender = Arrays.asList(StatusEffect.STARVING, StatusEffect.HUNGRY);
+    private static final List<StatusEffect> skipRender = Arrays.asList(StatusEffect.STARVING, StatusEffect.HUNGRY, StatusEffect.FULL);
 
     private StatusEffect effect;
     private SurvivalistPlugin plugin;
@@ -18,7 +18,7 @@ public class StatusEffectInfobox extends InfoBox {
         this.plugin = plugin;
         this.effect = effect;
 
-        this.setTooltip(effect.getName());
+        this.setTooltip(effect.getTooltip());
     }
 
     @Override

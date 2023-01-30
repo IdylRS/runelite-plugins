@@ -159,8 +159,11 @@ public class SurvivalistPlugin extends Plugin
 
 	@Subscribe
 	public void onMenuOptionClicked(MenuOptionClicked e) {
-		if(e.getMenuOption().equals("Eat")) {
+		if(e.getMenuOption().equals("Eat") && statusEffects.get(StatusEffect.EATING) == 0) {
 			addHunger(itemStats.get(e.getItemId()));
+		}
+		else if(e.getMenuOption().equals("Eat")) {
+			e.consume();
 		}
 	}
 
@@ -231,10 +234,17 @@ public class SurvivalistPlugin extends Plugin
 			hunger = Math.max(0, Math.min(MAX_HUNGER, hunger-1));
 		}
 
+		if(Hunger.getHunger(this.hunger) == Hunger.FULL) {
+			statusEffects.put(StatusEffect.FULL, 1);
+		}
+		else {
+			statusEffects.put(StatusEffect.FULL, 0);
+		}
+
 		if(Hunger.getHunger(this.hunger) == Hunger.HUNGRY) {
 			statusEffects.put(StatusEffect.STARVING, 1);
 		}
-		if(Hunger.getHunger(this.hunger) == Hunger.STARVING) {
+		else if(Hunger.getHunger(this.hunger) == Hunger.STARVING) {
 			statusEffects.put(StatusEffect.STARVING, 1);
 		}
 		else {
@@ -245,6 +255,10 @@ public class SurvivalistPlugin extends Plugin
 
 	private void addHunger(int amount) {
 		this.hunger = Math.max(0, Math.min(MAX_HUNGER, hunger+amount*5));
+		this.hunger = Math.max(0, Math.min(MAX_HUNGER, hunger+amount*5));
+
+		if(amount > 0)
+			statusEffects.put(StatusEffect.EATING, Math.min(50, amount*2));
 	}
 
 	private void updateInjury() {
