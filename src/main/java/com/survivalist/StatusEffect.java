@@ -14,6 +14,7 @@ public enum StatusEffect {
     WARM("Warm", "You feel warm.", 1, ItemID.FIRE_FEATHER, false),
     PIOUS("Pious", "The gods smile upon you.", 1, ItemID.HOLY_SYMBOL, true),
     PROUD("Proud", "You feel proud.", 1, ItemID.GREEN_BALLOON, true),
+    RESTED("Rested", "You feel rested", 1, ItemID.CHILDS_BLANKET, true),
     EATING("Eating", "You are eating.", 0, ItemID.COOKED_MEAT, true);
 
     private String name;

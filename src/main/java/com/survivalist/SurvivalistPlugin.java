@@ -15,9 +15,11 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.cluescrolls.clues.item.MultipleOfItemRequirement;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 
+import java.sql.Time;
 import java.util.HashMap;
 
 @Slf4j
@@ -53,7 +55,7 @@ public class SurvivalistPlugin extends Plugin
 	private Widget overlay;
 
 	@Getter
-	private int gameTime = 500;
+	private int gameTime = 0;
 	@Getter
 	private int lifePoints = 1000;
 	@Getter
@@ -66,6 +68,10 @@ public class SurvivalistPlugin extends Plugin
 	private final ItemStatChanges itemStats = new ItemStatChanges();
 
 	private SurvivalistOverlay survivalistOverlay;
+
+	private int usingID = -1;
+
+	private int craftingLevel = -1;
 
 	@Override
 	protected void startUp() throws Exception
@@ -151,6 +157,23 @@ public class SurvivalistPlugin extends Plugin
 	}
 
 	@Subscribe
+	public void onStatChanged(StatChanged e) {
+		if(e.getSkill() == Skill.CRAFTING) {
+			int level = client.getRealSkillLevel(Skill.CRAFTING);
+			if(craftingLevel != -1) {
+				if(level == 15) {
+					clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You can now craft a bed to sleep at night by using 2 logs and 2 wool on each other.", ""));
+				}
+
+				craftingLevel = level;
+			}
+			else {
+				craftingLevel = level;
+			}
+		}
+	}
+
+	@Subscribe
 	public void onItemContainerChanged(ItemContainerChanged e) {
 		if(e.getContainerId() == InventoryID.INVENTORY.getId() || e.getContainerId() == InventoryID.EQUIPMENT.getId()) {
 			checkWeight();
@@ -164,6 +187,44 @@ public class SurvivalistPlugin extends Plugin
 		}
 		else if(e.getMenuOption().equals("Eat")) {
 			e.consume();
+		}
+
+		if(e.getMenuOption().equals("Use")) {
+			String name = client.getItemDefinition(e.getItemId()).getName();
+			TimeOfDay tod = TimeOfDay.getTimeOfDay(this.gameTime);
+
+			if((e.getItemId() == ItemID.WOOL || name.toLowerCase().contains("logs")) && client.getRealSkillLevel(Skill.CRAFTING) >= 15) {
+				if(usingID == -1) usingID = e.getItemId();
+				else {
+					if(tod != TimeOfDay.DUSK && tod != TimeOfDay.NIGHT) {
+						clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You can't sleep at this hour.", ""));
+					}
+
+					ItemContainer inv = client.getItemContainer(InventoryID.INVENTORY);
+
+					int numLogs = 0;
+					int numWool = 0;
+
+					for(Item item : inv.getItems()) {
+						if(item.getId() == ItemID.WOOL) numWool++;
+						else if(item.getId() == ItemID.LOGS) numLogs++;
+					}
+
+					if(numLogs < 2 || numWool < 2) {
+						clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You need 2 logs of the same type and 2 wool to sleep.", ""));
+					}
+					else if(checkForFire() > -1){
+						this.gameTime = TimeOfDay.DAWN.getStartTick();
+						clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You craft a makeshift bed and fall fast asleep.", ""));
+						statusEffects.put(StatusEffect.RESTED, 100);
+					}
+					else {
+						clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You must sleep near a fire.", ""));
+					}
+
+					usingID = -1;
+				}
+			}
 		}
 	}
 
