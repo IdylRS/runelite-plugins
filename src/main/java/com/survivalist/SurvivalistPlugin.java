@@ -248,7 +248,7 @@ public class SurvivalistPlugin extends Plugin
 	}
 
 	private void updateInjury() {
-		double ratio = (double) client.getLocalPlayer().getHealthRatio() / (double) client.getLocalPlayer().getHealthScale();
+		double ratio = (double) client.getBoostedSkillLevel(Skill.HITPOINTS) / (double) client.getRealSkillLevel(Skill.HITPOINTS);
 
 		if(ratio <= .2) {
 			statusEffects.put(StatusEffect.INJURED, 1);
