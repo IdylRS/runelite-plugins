@@ -44,7 +44,7 @@ public class UnlockData {
     }
 
     public void updateGameTime() {
-        this.gameTime = (this.gameTime+1) % TICKS_PER_DAY;
+        this.gameTime = (this.gameTime+2) % TICKS_PER_DAY;
     }
 
     public void updateLifePoints() {

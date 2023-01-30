@@ -98,6 +98,8 @@ public class SurvivalistPlugin extends Plugin
 	private Map<WorldPoint, Lootbeam> lootbeams = new HashMap<>();
 	private Map<WorldPoint, Scroll> scrolls = new HashMap<>();
 
+	private int ticks = 1;
+
 	@Override
 	protected void startUp() throws Exception
 	{
@@ -172,10 +174,6 @@ public class SurvivalistPlugin extends Plugin
 		}
 	}
 
-	@Schedule(
-			period = 30,
-			unit = ChronoUnit.SECONDS
-	)
 	private void savePlayerData() {
 		try {
 			PrintWriter w = new PrintWriter(playerFile);
@@ -242,6 +240,7 @@ public class SurvivalistPlugin extends Plugin
 	{
 		if (gameStateChanged.getGameState() == GameState.LOGIN_SCREEN)
 		{
+			if(unlockData != null) savePlayerData();
 			skillLevels = new HashMap<>();
 			unlockData = null;
 		}
@@ -288,6 +287,11 @@ public class SurvivalistPlugin extends Plugin
 		unlockData.updateHunger();
 		unlockData.updateInjury((double) client.getBoostedSkillLevel(Skill.HITPOINTS) / (double) client.getRealSkillLevel(Skill.HITPOINTS));
 		unlockData.updateLifePoints();
+
+		if(ticks % 100 == 0 && unlockData != null) {
+			savePlayerData();
+		}
+		ticks++;
 	}
 
 	@Subscribe
