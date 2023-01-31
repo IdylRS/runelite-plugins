@@ -498,6 +498,13 @@ public class SurvivalistPlugin extends Plugin
 			Age lastAge = unlockData.getAge();
 			clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You have completed the "+lastAge.getName()+"!", ""));
 			this.unlockData.setAge(Age.getNextAge(lastAge));
+
+			if(this.unlockData.getAge() == Age.MAGIC_AGE) {
+				clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "The secrets of your forgotten skills lie to the north...", ""));
+			}
+			if(lastAge == Age.DRAGON_AGE) {
+				clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You win?", ""));
+			}
 		}
 	}
 
