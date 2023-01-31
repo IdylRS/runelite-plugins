@@ -291,10 +291,21 @@ public class SurvivalistPlugin extends Plugin
 		unlockData.updateInjury((double) client.getBoostedSkillLevel(Skill.HITPOINTS) / (double) client.getRealSkillLevel(Skill.HITPOINTS));
 		unlockData.updateLifePoints();
 
+		if(unlockData.getLifePoints() == 0) {
+			clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.CONSOLE, "", "Your life points have hit 0. You have failed to survive. Game over.", ""));
+		}
+
 		if(ticks % 100 == 0 && unlockData != null) {
 			savePlayerData();
 		}
 		ticks++;
+	}
+
+	@Subscribe
+	public void onActorDeath(ActorDeath e) {
+		if(e.getActor().equals(client.getLocalPlayer())) {
+			clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.CONSOLE, "", "You have failed to survive. Game over.", ""));
+		}
 	}
 
 	@Subscribe
