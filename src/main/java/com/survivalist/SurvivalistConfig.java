@@ -8,12 +8,11 @@ import net.runelite.client.config.ConfigItem;
 public interface SurvivalistConfig extends Config
 {
 	@ConfigItem(
-		keyName = "age",
-		name = "Age",
-		description = "The age you are currently in"
+			keyName = "showAgeBoss",
+			description = "Show the age's boss in the overlay",
+			name = "Show Age Boss"
 	)
-	default Age age()
-	{
-		return Age.STEEL_AGE;
+	default boolean showAgeBoss() {
+		return true;
 	}
 }

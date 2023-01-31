@@ -369,46 +369,13 @@ public class SurvivalistPlugin extends Plugin
 			if(!isItemUnlocked(e.getItemId())) e.consume();
 		}
 		else if(e.getMenuOption().equals("Use")) {
-			String name = client.getItemDefinition(e.getItemId()).getName();
-			TimeOfDay tod = TimeOfDay.getTimeOfDay(unlockData.getGameTime());
-
-			if((e.getItemId() == ItemID.WOOL || name.toLowerCase().contains("logs")) && client.getRealSkillLevel(Skill.CRAFTING) >= 15) {
-				if(usingID == -1) usingID = e.getItemId();
-				else {
-					if(tod != TimeOfDay.DUSK && tod != TimeOfDay.NIGHT) {
-						clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You can't sleep at this hour.", ""));
-					}
-
-					ItemContainer inv = client.getItemContainer(InventoryID.INVENTORY);
-
-					int numLogs = 0;
-					int numWool = 0;
-
-					for(Item item : inv.getItems()) {
-						if(item.getId() == ItemID.WOOL) numWool++;
-						else if(item.getId() == ItemID.LOGS) numLogs++;
-					}
-
-					if(numLogs < 2 || numWool < 2) {
-						clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You need 2 logs of the same type and 2 wool to sleep.", ""));
-					}
-					else if(checkForFire() > -1){
-						unlockData.sleep();
-						clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You craft a makeshift bed and fall fast asleep.", ""));
-						unlockData.getStatusEffects().put(StatusEffect.RESTED, 100);
-					}
-					else {
-						clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You must sleep near a fire.", ""));
-					}
-
-					usingID = -1;
-				}
-			}
+			checkForBed(e.getItemId());
 		}
 	}
 
 	@Subscribe
 	public void onNpcLootReceived(NpcLootReceived e) {
+		checkForAgeCompletion(e.getNpc().getId());
 		if(client.getVarbitValue(Varbits.IN_WILDERNESS) == 1) {
 			double roll = Math.random()*1000;
 			if(roll < e.getNpc().getCombatLevel()) {
@@ -458,6 +425,8 @@ public class SurvivalistPlugin extends Plugin
 			for(int y=0;y<Constants.SCENE_SIZE;++y) {
 				Tile tile = tiles[plane][x][y];
 
+				if(tile == null) continue;
+
 				for(GameObject go : tile.getGameObjects()) {
 					if(go != null && go.getId() == FIRE_OBJECT_ID) {
 						int distance = client.getLocalPlayer().getWorldLocation().distanceTo(tile.getWorldLocation());
@@ -479,6 +448,56 @@ public class SurvivalistPlugin extends Plugin
 
 		if(weight > maxWeight) {
 			unlockData.getStatusEffects().put(StatusEffect.OVERWEIGHT, 1);
+		}
+	}
+
+	private void checkForBed(int itemID) {
+		String name = client.getItemDefinition(itemID).getName();
+		TimeOfDay tod = TimeOfDay.getTimeOfDay(unlockData.getGameTime());
+
+		if((itemID == ItemID.WOOL || name.toLowerCase().contains("logs")) && client.getRealSkillLevel(Skill.CRAFTING) >= 15) {
+			if(usingID == -1) {
+				usingID = itemID;
+				return;
+			}
+			else {
+				usingID = -1;
+
+				if(tod != TimeOfDay.DUSK && tod != TimeOfDay.NIGHT) {
+					clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You can't sleep at this hour.", ""));
+					return;
+				}
+
+				ItemContainer inv = client.getItemContainer(InventoryID.INVENTORY);
+
+				int numLogs = 0;
+				int numWool = 0;
+
+				for(Item item : inv.getItems()) {
+					if(item.getId() == ItemID.WOOL) numWool++;
+					else if(item.getId() == ItemID.LOGS) numLogs++;
+				}
+
+				if(numLogs < 2 || numWool < 2) {
+					clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You need 2 logs of the same type and 2 wool to sleep.", ""));
+				}
+				else if(checkForFire() > -1){
+					unlockData.sleep();
+					clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You craft a makeshift bed and fall fast asleep.", ""));
+					unlockData.getStatusEffects().put(StatusEffect.RESTED, 100);
+				}
+				else {
+					clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You must sleep near a fire.", ""));
+				}
+			}
+		}
+	}
+
+	private void checkForAgeCompletion(int npcID) {
+		if(this.unlockData.getAge().getBossID() == npcID) {
+			Age lastAge = unlockData.getAge();
+			clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You have completed the "+lastAge.getName()+"!", ""));
+			this.unlockData.setAge(Age.getNextAge(lastAge));
 		}
 	}
 
@@ -515,7 +534,7 @@ public class SurvivalistPlugin extends Plugin
 	}
 
 	boolean isItemUnlocked(int itemID) {
-		List<String> prefixes = Age.getIllegalItemPrefixes(config.age());
+		List<String> prefixes = Age.getIllegalItemPrefixes(unlockData.getAge());
 
 		ItemComposition itemComposition = client.getItemDefinition(itemID);
 		String name = itemComposition.getName().toLowerCase();
@@ -537,6 +556,12 @@ public class SurvivalistPlugin extends Plugin
 		}
 
 		return true;
+	}
+
+	String getAgeBossName() {
+		if(unlockData == null) return null;
+
+		return client.getNpcDefinition(unlockData.getAge().getBossID()).getName();
 	}
 
 	private void addLootbeam(WorldPoint worldPoint, Color color)

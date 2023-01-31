@@ -2,6 +2,7 @@ package com.survivalist;
 
 import lombok.Getter;
 import net.runelite.api.ItemID;
+import net.runelite.api.NPCComposition;
 import net.runelite.api.NpcID;
 
 import java.util.ArrayList;
@@ -10,7 +11,7 @@ import java.util.List;
 
 @Getter
 public enum Age {
-    STEEL_AGE("Steel Age", NpcID.COUNT_DRAYNOR, "Leather", "Dramen", "Beekeeper", "Iron", "Bronze", "Steel", "Wizard", "Blue wizard", "Training", "Black robe", "Black skirt", "Blue skirt", "Studded", "Hardleather"),
+    STEEL_AGE("Steel Age", NpcID.GOBLIN_3033, "Leather", "Dramen", "Beekeeper", "Iron", "Bronze", "Steel", "Wizard", "Blue wizard", "Training", "Black robe", "Black skirt", "Blue skirt", "Studded", "Hardleather"),
     MITHRIL_AGE("Mithril Age", NpcID.MELZAR_THE_MAD, "Mithril", "Mith", "Black", "White", "Initiate", "Frog-leather", "Xerician"),
     MAGIC_AGE("Magic Age", NpcID.CRAZY_ARCHAEOLOGIST, "Adamant", "Shayzien", "Staff", "Samurai", "Proselyte", "Ranger", "Green d'hide"),
     RUNITE_AGE("Runite Age", NpcID.BRYOPHYTA, "Rune", "Runite", "Rock-shell", "Blue d'hide", "Mystic", "Elder chaos", "Infinity", "Void", "Spined"),
@@ -39,5 +40,19 @@ public enum Age {
         }
 
         return prefixes;
+    }
+
+    public static Age getNextAge(Age currentAge) {
+        switch(currentAge) {
+            case STEEL_AGE:
+                return MITHRIL_AGE;
+            case MITHRIL_AGE:
+                return MAGIC_AGE;
+            case MAGIC_AGE:
+                return RUNITE_AGE;
+            case RUNITE_AGE:
+            default:
+                return DRAGON_AGE;
+        }
     }
 }

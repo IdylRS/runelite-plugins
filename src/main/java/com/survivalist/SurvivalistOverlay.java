@@ -17,6 +17,7 @@ public class SurvivalistOverlay extends OverlayPanel {
     private final LineComponent timeOfDayComponent;
     private final LineComponent hungerComponent;
     private final LineComponent lifePointsComponent;
+    private final LineComponent bossNameComponent;
 
     public SurvivalistOverlay(SurvivalistPlugin plugin, SurvivalistConfig config) {
         this.plugin = plugin;
@@ -24,15 +25,15 @@ public class SurvivalistOverlay extends OverlayPanel {
 
         setLayer(OverlayLayer.ABOVE_WIDGETS);
         setPriority(OverlayPriority.HIGH);
-        setPosition(OverlayPosition.BOTTOM_LEFT);
+        setPosition(OverlayPosition.TOP_CENTER);
 
         timeOfDayComponent = LineComponent.builder().left("Time of Day:").right("").build();
         hungerComponent = LineComponent.builder().left("Hunger:").right("").build();
         lifePointsComponent = LineComponent.builder().left("Life Points:").right("").build();
-        titleComponent = TitleComponent.builder().text("Steel Age").build();
+        bossNameComponent = LineComponent.builder().left("Age Boss:").right("").build();
+        titleComponent = TitleComponent.builder().text("Survivalist").build();
 
-        panelComponent.getChildren().addAll(Arrays.asList(titleComponent, lifePointsComponent, timeOfDayComponent, hungerComponent));
-        setClearChildren(false);
+        panelComponent.getChildren().addAll(Arrays.asList(titleComponent, lifePointsComponent, timeOfDayComponent, hungerComponent, bossNameComponent));
     }
 
     @Override
@@ -40,6 +41,10 @@ public class SurvivalistOverlay extends OverlayPanel {
         graphics.setFont(FontManager.getRunescapeFont());
         TimeOfDay tod = TimeOfDay.getTimeOfDay(plugin.getUnlockData().getGameTime());
         Hunger hunger = Hunger.getHunger(plugin.getUnlockData().getHunger());
+        String age = plugin.getUnlockData() != null ? plugin.getUnlockData().getAge().getName() : "Survivalist";
+        String boss = plugin.getUnlockData() != null ? plugin.getAgeBossName() : "???";
+
+        bossNameComponent.setRight(boss);
 
         lifePointsComponent.setRight((int) Math.ceil(plugin.getUnlockData().getLifePoints()/10)+"LP");
         lifePointsComponent.setRightColor(getLifePointsColor(plugin.getUnlockData().getLifePoints()));
@@ -49,6 +54,15 @@ public class SurvivalistOverlay extends OverlayPanel {
 
         hungerComponent.setRight(hunger.getName());
         hungerComponent.setRightColor(hunger.getColor());
+
+        titleComponent.setText(age);
+
+        if(config.showAgeBoss()) {
+            panelComponent.getChildren().addAll(Arrays.asList(titleComponent, lifePointsComponent, timeOfDayComponent, hungerComponent, bossNameComponent));
+        }
+        else {
+            panelComponent.getChildren().addAll(Arrays.asList(titleComponent, lifePointsComponent, timeOfDayComponent, hungerComponent));
+        }
 
         return super.render(graphics);
     }
