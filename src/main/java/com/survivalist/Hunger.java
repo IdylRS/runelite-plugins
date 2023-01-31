@@ -7,9 +7,9 @@ import java.awt.*;
 @Getter
 public enum Hunger {
     FULL("Full", 100, 80, Color.GREEN),
-    PECKISH("Peckish", 80, 60, Color.YELLOW),
-    HUNGRY("Hungry", 60, 30, Color.ORANGE),
-    STARVING("Starving", 30, -1, Color.RED);
+    PECKISH("Peckish", 75, 50, Color.YELLOW),
+    HUNGRY("Hungry", 50, 15, Color.ORANGE),
+    STARVING("Starving", 15, -1, Color.RED);
 
     private String name;
     private int startHunger;

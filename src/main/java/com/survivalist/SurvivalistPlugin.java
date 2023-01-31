@@ -18,6 +18,7 @@ import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.NpcLootReceived;
 import net.runelite.client.game.ItemManager;
+import net.runelite.client.game.SpriteManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ColorScheme;
@@ -68,7 +69,12 @@ public class SurvivalistPlugin extends Plugin
 	private ItemManager itemManager;
 
 	@Inject
+	private SpriteManager spriteManager;
+
+	@Inject
 	private SurvivalistConfig config;
+
+	private LifePointsBarOverlay lifePointsBarOverlay;
 
 	private Widget overlay;
 	private UILabel prayerLocked;
@@ -95,14 +101,17 @@ public class SurvivalistPlugin extends Plugin
 	private Map<WorldPoint, Scroll> scrolls = new HashMap<>();
 
 	private int ticks = 1;
+	private boolean sentGameOver = false;
 
 	@Override
 	protected void startUp() throws Exception
 	{
 		survivalistOverlay = new SurvivalistOverlay(this, config);
 		itemOverlay = new SurvivalistItemOverlay(itemManager, this);
+		lifePointsBarOverlay = new LifePointsBarOverlay(client, this, spriteManager);
 		overlayManager.add(itemOverlay);
 		overlayManager.add(survivalistOverlay);
+		overlayManager.add(lifePointsBarOverlay);
 		if(client.getGameState() == GameState.LOGGED_IN) {
 			if(this.overlay != null) this.overlay.setHidden(false);
 			else clientThread.invokeLater(this::createNightTimeOverlay);
@@ -120,10 +129,12 @@ public class SurvivalistPlugin extends Plugin
 
 		overlayManager.remove(survivalistOverlay);
 		overlayManager.remove(itemOverlay);
+		overlayManager.remove(lifePointsBarOverlay);
 		showPrayers();
 		showMagic();
 		itemOverlay = null;
 		survivalistOverlay = null;
+		lifePointsBarOverlay = null;
 		if(this.overlay != null) this.overlay.setHidden(true);
 
 		for(WorldPoint point : scrolls.keySet()) {
@@ -291,8 +302,9 @@ public class SurvivalistPlugin extends Plugin
 		unlockData.updateInjury((double) client.getBoostedSkillLevel(Skill.HITPOINTS) / (double) client.getRealSkillLevel(Skill.HITPOINTS));
 		unlockData.updateLifePoints();
 
-		if(unlockData.getLifePoints() == 0) {
+		if(unlockData.getLifePoints() == 0 && !sentGameOver) {
 			clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.CONSOLE, "", "Your life points have hit 0. You have failed to survive. Game over.", ""));
+			sentGameOver = true;
 		}
 
 		if(ticks % 100 == 0 && unlockData != null) {
@@ -635,6 +647,18 @@ public class SurvivalistPlugin extends Plugin
 		return skill.equals(Skill.MAGIC) ? Color.CYAN : Color.YELLOW;
 	}
 
+	public int getLifePointsRestoreValue() {
+		int value = 0;
+
+		for(StatusEffect effect : unlockData.getStatusEffects().keySet()) {
+			if(unlockData.getStatusEffects().get(effect) > 0) {
+				value += effect.getLpPerTick();
+			}
+		}
+
+		return value;
+	}
+
 	public static int getCenterX(Widget window, int width) {
 		return (window.getWidth() / 2) - (width / 2);
 	}
@@ -642,7 +666,6 @@ public class SurvivalistPlugin extends Plugin
 	public static int getCenterY(Widget window, int height) {
 		return (window.getHeight() / 2) - (height / 2);
 	}
-
 
 	@Provides
 	SurvivalistConfig provideConfig(ConfigManager configManager)

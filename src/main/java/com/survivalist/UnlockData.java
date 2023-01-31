@@ -56,7 +56,7 @@ public class UnlockData {
     }
 
     public void updateHunger() {
-        if(this.gameTime % 3 == 0) {
+        if(this.gameTime % 5 == 0) {
             hunger = Math.max(0, Math.min(MAX_HUNGER, hunger-1));
         }
 
