@@ -4,10 +4,10 @@ import lombok.Getter;
 
 @Getter
 public enum TimeOfDay {
-    DAWN("Dawn", 500, 700, 150),
-    DAY("Day", 700, 1800, 255),
-    DUSK("Dusk", 1800, 2000, 120),
-    NIGHT("Night", 2000, 500, 25);
+    DAWN("Dawn", 0, 200, 150),
+    DAY("Day", 200, 1300, 255),
+    DUSK("Dusk", 1300, 1500, 120),
+    NIGHT("Night", 1500, 2400, 25);
 
     private String name;
     private int startTick;
@@ -22,8 +22,6 @@ public enum TimeOfDay {
     }
 
     public static TimeOfDay getTimeOfDay(int gameTime) {
-        if(gameTime >= NIGHT.startTick || gameTime < NIGHT.endTick) return NIGHT;
-
         for(TimeOfDay t : TimeOfDay.values()) {
             if(gameTime >= t.startTick && gameTime < t.endTick) {
                 return t;

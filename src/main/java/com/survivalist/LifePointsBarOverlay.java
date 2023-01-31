@@ -5,9 +5,7 @@ import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import net.runelite.api.Client;
 import net.runelite.api.ItemID;
@@ -27,6 +25,7 @@ class LifePointsBarOverlay extends Overlay
 {
     private static final Color LIFE_POINTS_COLOR = new Color(58, 219, 0, 150);
     private static final Color HUNGER_COLOR = new Color(255, 149, 0, 150);
+    private static final Color TIME_COLOR = new Color(0, 221, 255, 150);
     private static final Color HEAL_COLOR = new Color(255, 112, 6, 150);
     private static final int HEIGHT = 252;
     private static final int WIDTH = 152;
@@ -40,7 +39,9 @@ class LifePointsBarOverlay extends Overlay
 
     private Image lpIcon;
     private Image hungerIcon;
-    private final Map<BarMode, BarRenderer> barRenderers = new EnumMap<>(BarMode.class);
+    private Image dayIcon;
+    private Image nightIcon;
+    private final List<BarRenderer> barRenderers = new ArrayList<>();
 
     LifePointsBarOverlay(Client client, SurvivalistPlugin plugin, SpriteManager spriteManager)
     {
@@ -54,22 +55,32 @@ class LifePointsBarOverlay extends Overlay
 
     private void initRenderers()
     {
-        barRenderers.put(BarMode.DISABLED, null);
-        barRenderers.put(BarMode.HITPOINTS, new BarRenderer(
+        barRenderers.add(new BarRenderer(
                 () -> MAX_LIFE_POINTS_VALUE,
                 () -> plugin.getUnlockData().getLifePoints(),
                 plugin::getLifePointsRestoreValue,
                 () -> LIFE_POINTS_COLOR,
                 () -> HEAL_COLOR,
-                () -> lpIcon
+                () -> lpIcon,
+                () -> Integer.toString((int) Math.ceil( (double) plugin.getUnlockData().getLifePoints() / 10))
         ));
-        barRenderers.put(BarMode.RUN_ENERGY, new BarRenderer(
+        barRenderers.add(new BarRenderer(
                 () -> MAX_HUNGER_VALUE,
                 () -> plugin.getUnlockData().getHunger(),
                 plugin::getLifePointsRestoreValue,
                 () -> HUNGER_COLOR,
                 () -> HEAL_COLOR,
-                () -> hungerIcon
+                () -> hungerIcon,
+                () -> Hunger.getHunger(plugin.getUnlockData().getHunger()).getName()
+        ));
+        barRenderers.add(new BarRenderer(
+                () -> 2400,
+                () -> 2400 - plugin.getUnlockData().getGameTime(),
+                plugin::getLifePointsRestoreValue,
+                () -> TIME_COLOR,
+                () -> HEAL_COLOR,
+                () -> getTimeIcon(),
+                () -> TimeOfDay.getTimeOfDay(plugin.getUnlockData().getGameTime()).getName()
         ));
     }
 
@@ -107,7 +118,7 @@ class LifePointsBarOverlay extends Overlay
         offsetLeftBarY = (location.getY() - offsetLeft.getY());
 
         int offset = 0;
-        for(BarRenderer barRenderer : barRenderers.values()) {
+        for(BarRenderer barRenderer : barRenderers) {
             if(barRenderer != null) {
                 barRenderer.renderBar(g, offsetLeftBarX, offsetLeftBarY + (offset), width, height);
                 offset += 20;
@@ -127,6 +138,12 @@ class LifePointsBarOverlay extends Overlay
         {
             hungerIcon = loadAndResize(SpriteID.SPELL_BONES_TO_PEACHES);
         }
+        if(dayIcon == null) {
+            dayIcon = loadAndResize(SpriteID.SPELL_TELE_GROUP_KHAZARD);
+        }
+        if(nightIcon == null) {
+            nightIcon = loadAndResize(SpriteID.SPELL_TELE_GROUP_MOONCLAN);
+        }
     }
 
     private BufferedImage loadAndResize(int spriteId)
@@ -138,5 +155,12 @@ class LifePointsBarOverlay extends Overlay
         }
 
         return ImageUtil.resizeCanvas(image, ICON_DIMENSIONS.width, ICON_DIMENSIONS.height);
+    }
+
+    private Image getTimeIcon() {
+        if(plugin.getUnlockData() != null && TimeOfDay.getTimeOfDay(plugin.getUnlockData().getGameTime()) == TimeOfDay.NIGHT) {
+            return nightIcon;
+        }
+        else return dayIcon;
     }
 }

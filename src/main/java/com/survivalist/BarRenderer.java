@@ -31,7 +31,6 @@ import java.awt.Image;
 import java.awt.Point;
 import java.util.function.Supplier;
 
-import com.survivalist.SurvivalistConfig;
 import lombok.RequiredArgsConstructor;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.overlay.components.TextComponent;
@@ -43,17 +42,14 @@ class BarRenderer
     private static final Color OVERHEAL_COLOR = new Color(216, 255, 139, 150);
     private static final int COUNTER_ICON_HEIGHT = 14;
     private static final int BORDER_SIZE = 1;
-    private static final int MIN_ICON_AND_COUNTER_WIDTH = 16;
-    static final int DEFAULT_WIDTH = 20;
     static final int DEFAULT_HEIGHT = 18;
-    static final int MIN_WIDTH = 3;
-    static final int MAX_WIDTH = 40;
     private final Supplier<Integer> maxValueSupplier;
     private final Supplier<Integer> currentValueSupplier;
     private final Supplier<Integer> healSupplier;
     private final Supplier<Color> colorSupplier;
     private final Supplier<Color> healColorSupplier;
     private final Supplier<Image> iconSupplier;
+    private final Supplier<String> counterDisplayText;
     private int maxValue;
     private int currentValue;
 
@@ -93,11 +89,6 @@ class BarRenderer
 
     private void renderIconsAndCounters(Graphics2D graphics, int x, int y, int width, int height)
     {
-        // Icons and counters overlap the bar at small widths, so they are not drawn when the bars are too small
-//        if (width < MIN_ICON_AND_COUNTER_WIDTH)
-//        {
-//            return;
-//        }
 
         final Image icon = iconSupplier.get();
         final int xDraw = x + icon.getWidth(null);
@@ -105,13 +96,12 @@ class BarRenderer
         graphics.drawImage(icon, xDraw, yDraw, null);
 
         graphics.setFont(FontManager.getRunescapeSmallFont());
-        final String counterText = Integer.toString(currentValue);
-        final int widthOfCounter = graphics.getFontMetrics().stringWidth(counterText);
+        final int widthOfCounter = graphics.getFontMetrics().stringWidth(counterDisplayText.get());
         final int centerText = (width / 2) - (widthOfCounter / 2);
         final int yOffset = COUNTER_ICON_HEIGHT;
 
         final TextComponent textComponent = new TextComponent();
-        textComponent.setText(counterText);
+        textComponent.setText(counterDisplayText.get());
         textComponent.setPosition(new Point(x + centerText, y + yOffset));
         textComponent.render(graphics);
     }

@@ -27,7 +27,7 @@ public class UnlockData {
         age = Age.STEEL_AGE;
         hunger = 0;
         lifePoints = 0;
-        gameTime = 700;
+        gameTime = 0;
 
         magicUnlocked = false;
         prayerUnlocked = false;
