@@ -11,7 +11,7 @@ import java.util.List;
 
 @Getter
 public enum Age {
-    STEEL_AGE("Steel Age", NpcID.GOBLIN_3033, "Leather", "Dramen", "Beekeeper", "Iron", "Bronze", "Steel", "Wizard", "Blue wizard", "Training", "Black robe", "Black skirt", "Blue skirt", "Studded", "Hardleather"),
+    STEEL_AGE("Steel Age", NpcID.COUNT_DRAYNOR, "Leather", "Dramen", "Beekeeper", "Iron", "Bronze", "Steel", "Wizard", "Blue wizard", "Training", "Black robe", "Black skirt", "Blue skirt", "Studded", "Hardleather"),
     MITHRIL_AGE("Mithril Age", NpcID.MELZAR_THE_MAD, "Mithril", "Mith", "Black", "White", "Initiate", "Frog-leather", "Xerician"),
     MAGIC_AGE("Magic Age", NpcID.CRAZY_ARCHAEOLOGIST, "Adamant", "Shayzien", "Staff", "Samurai", "Proselyte", "Ranger", "Green d'hide"),
     RUNITE_AGE("Runite Age", NpcID.BRYOPHYTA, "Rune", "Runite", "Rock-shell", "Blue d'hide", "Mystic", "Elder chaos", "Infinity", "Void", "Spined"),
