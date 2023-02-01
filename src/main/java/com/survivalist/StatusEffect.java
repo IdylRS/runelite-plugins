@@ -6,10 +6,10 @@ import net.runelite.api.ItemID;
 @Getter
 public enum StatusEffect {
     HUNGRY("Hungry", "", -1, ItemID.COOKED_MEAT, false),
-    STARVING("Starving", "", -2, ItemID.COOKED_MEAT, false),
+    STARVING("Starving", "", -5, ItemID.COOKED_MEAT, false),
     COLD("Cold", "You feel cold.", -2,  ItemID.ICE_DIAMOND, false),
     INJURED("Injured", "You've gravely wounded.", -5, ItemID.BLOODY_KNIFE, false),
-    OVERWEIGHT("Overweight", "You are carrying too much.", -1, ItemID.THIEVING_BAG, false),
+    OVERWEIGHT("Overweight", "You are carrying too much.", -3, ItemID.THIEVING_BAG, false),
     FULL("Full", "", 0, ItemID.COOKED_MEAT, false),
     WARM("Warm", "You feel warm.", 1, ItemID.FIRE_FEATHER, false),
     PIOUS("Pious", "The gods smile upon you.", 1, ItemID.HOLY_SYMBOL, true),
