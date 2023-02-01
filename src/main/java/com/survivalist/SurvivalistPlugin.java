@@ -284,13 +284,13 @@ public class SurvivalistPlugin extends Plugin
 		int fireDistance = checkForFire();
 
 		if(fireDistance >= 0) {
-				unlockData.getStatusEffects().put(StatusEffect.WARM, 1);
-				double brightness = 110 - (fireDistance / WARMTH_DISTANCE)*100;
-				this.overlay.setOpacity((int) (TimeOfDay.NIGHT.getDarkness()+brightness));
-			}
-			else {
-				unlockData.getStatusEffects().put(StatusEffect.COLD, 1);
-			}
+			unlockData.getStatusEffects().put(StatusEffect.WARM, 1);
+			unlockData.getStatusEffects().put(StatusEffect.COLD, 0);
+			double brightness = 110 - (fireDistance / WARMTH_DISTANCE) * 100;
+			if(tod == TimeOfDay.NIGHT) this.overlay.setOpacity((int) (TimeOfDay.NIGHT.getDarkness() + brightness));
+		}
+		else if(tod == TimeOfDay.NIGHT) {
+			unlockData.getStatusEffects().put(StatusEffect.COLD, 1);
 		}
 		else {
 			unlockData.getStatusEffects().put(StatusEffect.COLD, 0);
