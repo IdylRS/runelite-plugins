@@ -10,7 +10,8 @@ import java.util.HashMap;
 public class UnlockData {
     private static final int MAX_LIFE_POINTS = 1000;
     private static final int MAX_HUNGER = 100;
-    private final int TICKS_PER_DAY = 2400;
+    private static final int TICKS_PER_DAY = 2400;
+    private static final int MAX_FULL_DRAIN_DELAY = 20;
 
     @Setter
     private boolean magicUnlocked;
@@ -22,6 +23,8 @@ public class UnlockData {
     private int lifePoints;
     private int gameTime;
     private final HashMap<StatusEffect, Integer> statusEffects = new HashMap<>();
+
+    private int fullDrainDelay = 0;
 
     UnlockData() {
         age = Age.STEEL_AGE;
@@ -57,7 +60,13 @@ public class UnlockData {
 
     public void updateHunger() {
         if(this.gameTime % 5 == 0) {
-            hunger = Math.max(0, Math.min(MAX_HUNGER, hunger-1));
+            if(fullDrainDelay > 0 && hunger == MAX_HUNGER) {
+                fullDrainDelay--;
+            }
+            else {
+                fullDrainDelay = 0;
+                hunger = Math.max(0, Math.min(MAX_HUNGER, hunger-1));
+            }
         }
 
         if(Hunger.getHunger(this.hunger) == Hunger.FULL) {
@@ -80,8 +89,14 @@ public class UnlockData {
     }
 
     public void addHunger(int amount) {
+        if(this.hunger == MAX_HUNGER && amount > 0) return;
+
         this.hunger = Math.max(0, Math.min(MAX_HUNGER, hunger+amount*5));
         this.hunger = Math.max(0, Math.min(MAX_HUNGER, hunger+amount*5));
+
+        if(this.hunger == MAX_HUNGER) {
+            this.fullDrainDelay = MAX_FULL_DRAIN_DELAY;
+        }
 
         if(amount > 0)
             statusEffects.put(StatusEffect.EATING, Math.min(50, amount*2));

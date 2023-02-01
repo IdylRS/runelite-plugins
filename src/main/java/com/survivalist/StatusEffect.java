@@ -10,7 +10,7 @@ public enum StatusEffect {
     COLD("Cold", "You feel cold.", -2,  ItemID.ICE_DIAMOND, false),
     INJURED("Injured", "You've gravely wounded.", -5, ItemID.BLOODY_KNIFE, false),
     OVERWEIGHT("Overweight", "You are carrying too much.", -1, ItemID.THIEVING_BAG, false),
-    FULL("Full", "", 1, ItemID.COOKED_MEAT, false),
+    FULL("Full", "", 0, ItemID.COOKED_MEAT, false),
     WARM("Warm", "You feel warm.", 1, ItemID.FIRE_FEATHER, false),
     PIOUS("Pious", "The gods smile upon you.", 1, ItemID.HOLY_SYMBOL, true),
     PROUD("Proud", "You feel proud.", 1, ItemID.GREEN_BALLOON, true),

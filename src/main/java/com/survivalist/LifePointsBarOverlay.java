@@ -25,6 +25,7 @@ class LifePointsBarOverlay extends Overlay
 {
     private static final Color LIFE_POINTS_COLOR = new Color(58, 219, 0, 150);
     private static final Color HUNGER_COLOR = new Color(255, 149, 0, 150);
+    private static final Color MAX_HUNGER_COLOR = new Color(255, 183, 0, 150);
     private static final Color TIME_COLOR = new Color(0, 221, 255, 150);
     private static final Color HEAL_COLOR = new Color(255, 112, 6, 150);
     private static final int HEIGHT = 252;
@@ -68,7 +69,7 @@ class LifePointsBarOverlay extends Overlay
                 () -> MAX_HUNGER_VALUE,
                 () -> plugin.getUnlockData().getHunger(),
                 plugin::getLifePointsRestoreValue,
-                () -> HUNGER_COLOR,
+                () -> getHungerColor(),
                 () -> HEAL_COLOR,
                 () -> hungerIcon,
                 () -> Hunger.getHunger(plugin.getUnlockData().getHunger()).getName()
@@ -162,5 +163,14 @@ class LifePointsBarOverlay extends Overlay
             return nightIcon;
         }
         else return dayIcon;
+    }
+
+    private Color getHungerColor() {
+        if(plugin.getUnlockData().getFullDrainDelay() > 0) {
+            return MAX_HUNGER_COLOR;
+        }
+        else {
+            return HUNGER_COLOR;
+        }
     }
 }

@@ -194,7 +194,7 @@ public class SurvivalistPlugin extends Plugin
 			String json = GSON.toJson(unlockData);
 			w.println(json);
 			w.close();
-			log.debug("Saving player data");
+			log.debug("Saving player data to "+playerFile.getName());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -260,7 +260,6 @@ public class SurvivalistPlugin extends Plugin
 		}
 		else if(gameStateChanged.getGameState().equals(GameState.LOGGED_IN)) {
 			if(unlockData == null) setupPlayerFile();
-			else savePlayerData();
 		}
 	}
 
@@ -282,9 +281,9 @@ public class SurvivalistPlugin extends Plugin
 			}
 		}
 
-		if(tod == TimeOfDay.NIGHT) {
-			int fireDistance = checkForFire();
-			if(fireDistance >= 0) {
+		int fireDistance = checkForFire();
+
+		if(fireDistance >= 0) {
 				unlockData.getStatusEffects().put(StatusEffect.WARM, 1);
 				double brightness = 110 - (fireDistance / WARMTH_DISTANCE)*100;
 				this.overlay.setOpacity((int) (TimeOfDay.NIGHT.getDarkness()+brightness));
