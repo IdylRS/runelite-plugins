@@ -52,7 +52,7 @@ public class ExamplePlugin extends Plugin
 
 	@Subscribe
 	public void onHitsplatApplied(HitsplatApplied e) throws IOException {
-		if(e.getHitsplat().isMine() && e.getHitsplat().getHitsplatType() == HitsplatID.DAMAGE_ME) {
+		if(e.getActor().equals(client.getLocalPlayer()) && e.getHitsplat().getHitsplatType() == HitsplatID.DAMAGE_ME) {
 			double max = 10;
 			double value = ( (double) e.getHitsplat().getAmount() / max) * 1000;
 
