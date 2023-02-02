@@ -26,4 +26,13 @@ public class UIGraphic extends UIComponent
 	{
 		this.getWidget().setSpriteId(spriteID);
 	}
+
+	/**
+	 * Sets the sprite to display on the component
+	 * @param itemID the item ID
+	 */
+	public void setItem(int itemID)
+	{
+		this.getWidget().setItemId(itemID);
+	}
 }

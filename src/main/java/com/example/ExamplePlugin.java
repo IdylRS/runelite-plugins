@@ -15,6 +15,7 @@ import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.api.widgets.WidgetType;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.game.SpriteManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 
@@ -28,6 +29,7 @@ import java.io.InputStreamReader;
 public class ExamplePlugin extends Plugin
 {
 	public static final String DEF_FILE_SPRITES = "SpriteDef.json";
+	public static final String DEF_FILE_TASKS = "tasks.json";
 
 	public static final int COLLECTION_LOG_WINDOW_WIDTH = 500;
 	public static final int COLLECTION_LOG_WINDOW_HEIGHT = 314;
@@ -42,7 +44,11 @@ public class ExamplePlugin extends Plugin
 	@Inject
 	private Gson gson;
 
+	@Inject
+	private SpriteManager spriteManager;
+
 	private SpriteDefinition[] spriteDefinitions;
+	private Task[] tasks;
 
 	private Task currentTask;
 
@@ -53,6 +59,12 @@ public class ExamplePlugin extends Plugin
 	protected void startUp() throws Exception
 	{
 		this.spriteDefinitions = loadDefinitionResource(SpriteDefinition[].class, DEF_FILE_SPRITES, gson);
+		this.tasks = loadDefinitionResource(Task[].class, DEF_FILE_TASKS, gson);
+		this.spriteManager.addSpriteOverrides(spriteDefinitions);
+
+		for(Task t : tasks) {
+			log.info("Created task: "+t.getDescription());
+		}
 	}
 
 	@Override
@@ -91,8 +103,8 @@ public class ExamplePlugin extends Plugin
 	@Subscribe
 	public void onWidgetLoaded(WidgetLoaded e) {
 		if(e.getGroupId() == WidgetInfo.COLLECTION_LOG.getGroupId()) {
-			createGenerateButton();
 			createTaskDashboard(client.getWidget(40697857));
+			createGenerateButton();
 		}
 	}
 
@@ -113,11 +125,13 @@ public class ExamplePlugin extends Plugin
 	}
 
 	private void createTaskDashboard(Widget window) {
-		this.taskDashboard = new TaskDashboard(window);
+		this.taskDashboard = new TaskDashboard(this, window);
 		this.taskDashboard.setVisibility(this.showTaskDashboard);
 	}
 
 	private void toggleTaskDashboard(UIComponent src) {
+		if(this.taskDashboard == null) return;
+
 		// The checkbox component
 		UICheckBox toggleCheckbox = (UICheckBox) src;
 
@@ -125,13 +139,46 @@ public class ExamplePlugin extends Plugin
 		this.showTaskDashboard = toggleCheckbox.isEnabled();
 		this.taskDashboard.setVisibility(showTaskDashboard);
 
-		if(currentTask != null) this.taskDashboard.setTaskText(currentTask.getDescription());
-		else this.taskDashboard.setTaskText("No task.");
+		if(currentTask != null) {
+			this.taskDashboard.setTask(currentTask.getDescription(), currentTask.getItemID());
+			this.taskDashboard.disableGenerateTask();
+		}
+		else {
+			nullCurrentTask();
+		}
 
 		client.getWidget(COLLECTION_LOG_CONTENT_WIDGET_ID).setHidden(showTaskDashboard);
 
 		// *Boop*
 		this.client.playSoundEffect(SoundEffectID.UI_BOOP);
+	}
+
+	public void generateTask() {
+		if(this.currentTask != null || this.tasks == null) {
+			this.taskDashboard.disableGenerateTask();
+			return;
+		}
+
+		int index = (int) Math.floor(Math.random()*this.tasks.length);
+
+		this.currentTask = tasks[index];
+		this.taskDashboard.setTask(this.currentTask.getDescription(), this.currentTask.getItemID());
+		log.debug("Task generated: "+this.currentTask.getDescription());
+
+		this.taskDashboard.disableGenerateTask();
+	}
+
+	public void completeTask() {
+		// TODO: Write completed task IDs to file
+		nullCurrentTask();
+
+		log.info("Completed a task!");
+	}
+
+	private void nullCurrentTask() {
+		this.currentTask = null;
+		this.taskDashboard.setTask("No task.", -1);
+		this.taskDashboard.enableGenerateTask();
 	}
 
 	public static int getCenterX(Widget window, int width) {

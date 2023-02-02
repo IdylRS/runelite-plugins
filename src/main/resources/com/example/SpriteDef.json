@@ -7,4 +7,24 @@
       "spriteId":-20001,
       "fileName":"genTask.png"
    },
+   {
+      "spriteId":-20002,
+      "fileName":"compTask-hover.png"
+   },
+   {
+      "spriteId":-20003,
+      "fileName":"genTask-hover.png"
+   },
+   {
+      "spriteId":-20004,
+      "fileName":"compTask-disabled.png"
+   },
+   {
+      "spriteId":-20005,
+      "fileName":"genTask-disabled.png"
+   },
+   {
+      "spriteId":-20006,
+      "fileName":"currentTask.png"
+   }
 ]
