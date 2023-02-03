@@ -97,6 +97,7 @@ public class TaskDashboard extends UIPage {
         this.taskImage.setPosition(POS_X+12, POS_Y+20);
         this.taskImage.getWidget().setItemQuantityMode(ItemQuantityMode.NEVER);
         this.taskImage.setSize(42, 36);
+        this.taskImage.getWidget().setBorderType(1);
 
     }
 

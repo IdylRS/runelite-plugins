@@ -1,5 +1,7 @@
 package com.generatetask.ui;
 
+import lombok.Getter;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,6 +11,8 @@ import java.util.List;
  */
 public class UIPage
 {
+	@Getter
+	private boolean visible;
 	private List<UIComponent> components;
 
 	/**
@@ -25,6 +29,7 @@ public class UIPage
 	 */
 	public void setVisibility(boolean visibility)
 	{
+		this.visible = visibility;
 		// Update the visibility for each of the components
 		this.components.forEach(c -> c.setVisibility(visibility));
 	}

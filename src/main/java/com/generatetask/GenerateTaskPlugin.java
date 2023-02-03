@@ -6,6 +6,7 @@ import com.google.gson.reflect.TypeToken;
 import com.google.inject.Provides;
 import javax.inject.Inject;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.events.GameStateChanged;
@@ -14,12 +15,16 @@ import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.api.widgets.WidgetType;
 import net.runelite.client.RuneLite;
+import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.SpriteManager;
+import net.runelite.client.input.MouseManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.input.MouseWheelListener;
 
+import java.awt.event.MouseWheelEvent;
 import java.io.*;
 import java.util.Arrays;
 import java.util.List;
@@ -32,12 +37,14 @@ import static net.runelite.http.api.RuneLiteAPI.GSON;
 @PluginDescriptor(
 	name = "Generate Task"
 )
-public class GenerateTaskPlugin extends Plugin
+public class GenerateTaskPlugin extends Plugin implements MouseWheelListener
 {
 	public static final String DEF_FILE_SPRITES = "SpriteDef.json";
 	public static final String DEF_FILE_TASKS = "tasks.json";
 	public static final int TASK_BACKGROUND_SPRITE_ID = -20006;
-	public static final int TASK_COMPLETE_BACKGROUND_SPRITE_ID = -20012;
+	public static final int TASK_LIST_BACKGROUND_SPRITE_ID = -20012;
+	public static final int TASK_COMPLETE_BACKGROUND_SPRITE_ID = -20013;
+	public static final int TASK_CURRENT_BACKGROUND_SPRITE_ID = -20016;
 
 	private static final String DATA_FOLDER_NAME = "generate-task";
 	public static final int COLLECTION_LOG_WINDOW_WIDTH = 500;
@@ -54,6 +61,9 @@ public class GenerateTaskPlugin extends Plugin
 	private Client client;
 
 	@Inject
+	private ClientThread clientThread;
+
+	@Inject
 	private GenerateTaskConfig config;
 
 	@Inject
@@ -62,8 +72,13 @@ public class GenerateTaskPlugin extends Plugin
 	@Inject
 	private SpriteManager spriteManager;
 
+	@Inject
+	private MouseManager mouseManager;
+
 	private SpriteDefinition[] spriteDefinitions;
 	private Task[] tasks;
+
+	@Getter
 	private SaveData saveData;
 
 	private TaskDashboard taskDashboard;
@@ -83,11 +98,13 @@ public class GenerateTaskPlugin extends Plugin
 		this.spriteDefinitions = loadDefinitionResource(SpriteDefinition[].class, DEF_FILE_SPRITES, gson);
 		this.tasks = loadDefinitionResource(Task[].class, DEF_FILE_TASKS, gson);
 		this.spriteManager.addSpriteOverrides(spriteDefinitions);
+		mouseManager.registerMouseWheelListener(this);
 	}
 
 	@Override
 	protected void shutDown() throws Exception
 	{
+		mouseManager.unregisterMouseWheelListener(this);
 	}
 
 	/**
@@ -203,6 +220,13 @@ public class GenerateTaskPlugin extends Plugin
 		}
 	}
 
+	@Override
+	public MouseWheelEvent mouseWheelMoved(MouseWheelEvent event)
+	{
+		taskList.handleWheel(event);
+		return event;
+	}
+
 	private void createGenerateButton() {
 		Widget window = client.getWidget(40697857);
 		// Create the graphic widget for the checkbox
@@ -225,7 +249,7 @@ public class GenerateTaskPlugin extends Plugin
 	}
 
 	private void createTaskList(Widget window) {
-		this.taskList = new TaskList(window, Arrays.asList(this.tasks), saveData.getCompletedTasks());
+		this.taskList = new TaskList(window, Arrays.asList(this.tasks), this, clientThread);
 		this.taskList.setVisibility(false);
 	}
 
@@ -274,19 +298,27 @@ public class GenerateTaskPlugin extends Plugin
 		log.debug("Task generated: "+this.saveData.currentTask.getDescription());
 
 		this.taskDashboard.disableGenerateTask();
+		taskList.refreshTasks(0);
 
 		savePlayerData();
 	}
 
 	public void completeTask() {
-		if(this.saveData.currentTask == null) {
-			this.taskDashboard.enableGenerateTask();
-			return;
+		completeTask(saveData.currentTask.getId());
+	}
+
+	public void completeTask(int taskID) {
+		this.client.playSoundEffect(SoundEffectID.UI_BOOP);
+
+		if(saveData.getCompletedTasks().get(taskID) != null) {
+			saveData.getCompletedTasks().remove(taskID);
+		}
+		else {
+			addCompletedTask(taskID);
+			if(saveData.currentTask != null && taskID == saveData.currentTask.getId()) nullCurrentTask();
 		}
 
-		this.client.playSoundEffect(SoundEffectID.UI_BOOP);
-		addCompletedTask(this.saveData.currentTask);
-		nullCurrentTask();
+		taskList.refreshTasks(0);
 
 		savePlayerData();
 	}
@@ -305,10 +337,10 @@ public class GenerateTaskPlugin extends Plugin
 		return (window.getHeight() / 2) - (height / 2);
 	}
 
-	public void addCompletedTask(Task task) {
-		if(this.saveData.getCompletedTasks().get(task.getId()) != null) return;
+	public void addCompletedTask(int taskID) {
+		if(this.saveData.getCompletedTasks().get(taskID) != null) return;
 
-		this.saveData.getCompletedTasks().put(task.getId(), 0);
+		this.saveData.getCompletedTasks().put(taskID, 0);
 	}
 
 	public List<Task> filterCompleteTasks(List<Task> taskList) {

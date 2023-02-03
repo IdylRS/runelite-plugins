@@ -49,6 +49,22 @@
    },
    {
       "spriteId":-20012,
-      "fileName":"taskBg-complete.png"
+      "fileName":"task-long.png"
+   },
+   {
+      "spriteId":-20013,
+      "fileName":"task-long-complete.png"
+   },
+   {
+      "spriteId":-20014,
+      "fileName":"up-arrow.png"
+   },
+   {
+      "spriteId":-20015,
+      "fileName":"down-arrow.png"
+   },
+   {
+      "spriteId":-20016,
+      "fileName":"task-long-current.png"
    }
 ]

@@ -18,5 +18,25 @@
         "id": 3,
         "itemID": 2123,
         "description":"Obtain 1 whatever this is?"
+    },
+    {
+        "id": 4,
+        "itemID": 1233,
+        "description":"Obtain 1 whatever this is?"
+    },
+    {
+        "id": 5,
+        "itemID": 234,
+        "description":"I'm a sexy little pirate"
+    },
+    {
+        "id": 6,
+        "itemID": 314,
+        "description":"I love tedious"
+    },
+    {
+        "id": 7,
+        "itemID": 21678,
+        "description":"SIKE!"
     }
 ]
