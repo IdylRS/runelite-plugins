@@ -1,4 +1,4 @@
-package com.example.ui;
+package com.generatetask.ui;
 
 import lombok.Getter;
 import lombok.Setter;

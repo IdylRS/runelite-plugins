@@ -1,4 +1,4 @@
-package com.example.ui;
+package com.generatetask.ui;
 
 import net.runelite.api.FontID;
 import net.runelite.api.widgets.Widget;

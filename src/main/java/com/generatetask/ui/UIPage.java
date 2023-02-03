@@ -1,4 +1,4 @@
-package com.example.ui;
+package com.generatetask.ui;
 
 import java.util.ArrayList;
 import java.util.List;

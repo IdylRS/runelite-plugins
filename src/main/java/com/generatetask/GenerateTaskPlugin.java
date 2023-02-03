@@ -1,7 +1,7 @@
-package com.example;
+package com.generatetask;
 
-import com.example.ui.UICheckBox;
-import com.example.ui.UIComponent;
+import com.generatetask.ui.UICheckBox;
+import com.generatetask.ui.UIComponent;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.inject.Provides;
@@ -31,9 +31,9 @@ import static net.runelite.http.api.RuneLiteAPI.GSON;
 
 @Slf4j
 @PluginDescriptor(
-	name = "Example"
+	name = "Generate Task"
 )
-public class ExamplePlugin extends Plugin
+public class GenerateTaskPlugin extends Plugin
 {
 	public static final String DEF_FILE_SPRITES = "SpriteDef.json";
 	public static final String DEF_FILE_TASKS = "tasks.json";
@@ -47,7 +47,7 @@ public class ExamplePlugin extends Plugin
 	private Client client;
 
 	@Inject
-	private ExampleConfig config;
+	private GenerateTaskConfig config;
 
 	@Inject
 	private Gson gson;
@@ -70,10 +70,6 @@ public class ExamplePlugin extends Plugin
 		this.spriteDefinitions = loadDefinitionResource(SpriteDefinition[].class, DEF_FILE_SPRITES, gson);
 		this.tasks = loadDefinitionResource(Task[].class, DEF_FILE_TASKS, gson);
 		this.spriteManager.addSpriteOverrides(spriteDefinitions);
-
-		for(Task t : tasks) {
-			log.info("Created task: "+t.getDescription());
-		}
 	}
 
 	@Override
@@ -279,8 +275,8 @@ public class ExamplePlugin extends Plugin
 	}
 
 	@Provides
-	ExampleConfig provideConfig(ConfigManager configManager)
+	GenerateTaskConfig provideConfig(ConfigManager configManager)
 	{
-		return configManager.getConfig(ExampleConfig.class);
+		return configManager.getConfig(GenerateTaskConfig.class);
 	}
 }

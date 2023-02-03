@@ -1,4 +1,4 @@
-package com.example.ui;
+package com.generatetask.ui;
 
 /**
  * A listener interface for receiving UI component events

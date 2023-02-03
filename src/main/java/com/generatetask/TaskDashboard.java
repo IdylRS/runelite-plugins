@@ -1,9 +1,9 @@
-package com.example;
+package com.generatetask;
 
-import com.example.ui.UIButton;
-import com.example.ui.UIGraphic;
-import com.example.ui.UILabel;
-import com.example.ui.UIPage;
+import com.generatetask.ui.UIButton;
+import com.generatetask.ui.UIGraphic;
+import com.generatetask.ui.UILabel;
+import com.generatetask.ui.UIPage;
 import lombok.Getter;
 import net.runelite.api.FontID;
 import net.runelite.api.widgets.ItemQuantityMode;
@@ -12,7 +12,7 @@ import net.runelite.api.widgets.WidgetType;
 
 import java.awt.*;
 
-import static com.example.ExamplePlugin.*;
+import static com.generatetask.GenerateTaskPlugin.*;
 
 public class TaskDashboard extends UIPage {
     private final int DEFAULT_BUTTON_WIDTH = 140;
@@ -29,7 +29,7 @@ public class TaskDashboard extends UIPage {
 
     @Getter
     private Widget window;
-    private ExamplePlugin plugin;
+    private GenerateTaskPlugin plugin;
 
     private UIPage taskDetails;
 
@@ -42,7 +42,7 @@ public class TaskDashboard extends UIPage {
     private UIButton completeTaskBtn;
     private UIButton generateTaskBtn;
 
-    public TaskDashboard(ExamplePlugin plugin, Widget window) {
+    public TaskDashboard(GenerateTaskPlugin plugin, Widget window) {
         this.window = window;
         this.plugin = plugin;
 
