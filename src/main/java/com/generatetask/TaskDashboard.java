@@ -107,7 +107,6 @@ public class TaskDashboard extends UIPage {
         this.taskImage.getWidget().setItemQuantityMode(ItemQuantityMode.NEVER);
         this.taskImage.setSize(42, 36);
         this.taskImage.getWidget().setBorderType(1);
-
     }
 
     public void setTask(String desc, int taskItemID) {

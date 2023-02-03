@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.WidgetClosed;
 import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
@@ -220,6 +221,15 @@ public class GenerateTaskPlugin extends Plugin implements MouseWheelListener
 		}
 	}
 
+	@Subscribe
+	public void onWidgetClosed(WidgetClosed e) {
+		if(e.getGroupId() == WidgetInfo.COLLECTION_LOG.getGroupId()) {
+			this.taskDashboard.setVisibility(false);
+			this.taskList.setVisibility(false);
+			this.taskDashboardCheckbox.setEnabled(false);
+		}
+	}
+
 	@Override
 	public MouseWheelEvent mouseWheelMoved(MouseWheelEvent event)
 	{
@@ -261,8 +271,6 @@ public class GenerateTaskPlugin extends Plugin implements MouseWheelListener
 	private void toggleTaskDashboard(UIComponent src) {
 		if(this.taskDashboard == null) return;
 
-		this.taskDashboard.setVisibility(this.taskDashboardCheckbox.isEnabled());
-
 		if(saveData.currentTask != null) {
 			this.taskDashboard.setTask(this.saveData.currentTask.getDescription(), this.saveData.currentTask.getItemID());
 			this.taskDashboard.disableGenerateTask();
@@ -272,8 +280,15 @@ public class GenerateTaskPlugin extends Plugin implements MouseWheelListener
 		}
 
 		client.getWidget(COLLECTION_LOG_CONTENT_WIDGET_ID).setHidden(this.taskDashboardCheckbox.isEnabled());
+		client.getWidget(40697936).setHidden(this.taskDashboardCheckbox.isEnabled());
 
-		if(this.taskDashboardCheckbox.isEnabled()) activateTaskDashboard();
+		if(this.taskDashboardCheckbox.isEnabled()) {
+			activateTaskDashboard();
+		}
+		else {
+			this.taskDashboard.setVisibility(false);
+			this.taskList.setVisibility(false);
+		}
 
 		// *Boop*
 		this.client.playSoundEffect(SoundEffectID.UI_BOOP);
