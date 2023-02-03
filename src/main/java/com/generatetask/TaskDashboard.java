@@ -103,7 +103,7 @@ public class TaskDashboard extends UIPage {
 
         Widget taskImageWidget = window.createChild(-1, WidgetType.GRAPHIC);
         this.taskImage = new UIGraphic(taskImageWidget);
-        this.taskImage.setPosition(POS_X+12, POS_Y+20);
+        this.taskImage.setPosition(POS_X+12, POS_Y+21);
         this.taskImage.getWidget().setItemQuantityMode(ItemQuantityMode.NEVER);
         this.taskImage.setSize(42, 36);
         this.taskImage.getWidget().setBorderType(1);
