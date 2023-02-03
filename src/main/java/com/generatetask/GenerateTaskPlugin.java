@@ -223,7 +223,10 @@ public class GenerateTaskPlugin extends Plugin implements MouseWheelListener
 	@Override
 	public MouseWheelEvent mouseWheelMoved(MouseWheelEvent event)
 	{
-		taskList.handleWheel(event);
+		if(this.taskList != null) {
+			taskList.handleWheel(event);
+		}
+
 		return event;
 	}
 

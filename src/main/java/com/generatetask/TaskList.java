@@ -167,8 +167,6 @@ public class TaskList extends UIPage {
 
     public void handleWheel(final MouseWheelEvent event)
     {
-        log.info(event.getWheelRotation()+" "+this.isVisible()+bounds.contains(event.getPoint()));
-
         if (!this.isVisible() || !bounds.contains(event.getPoint()))
         {
             return;
