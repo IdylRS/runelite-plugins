@@ -31,8 +31,6 @@ public class TaskDashboard extends UIPage {
     private Widget window;
     private GenerateTaskPlugin plugin;
 
-    private UIPage taskDetails;
-
     private UILabel title;
     private UILabel taskLabel;
 

@@ -1,7 +1,6 @@
 package com.generatetask;
 
-import com.generatetask.ui.UICheckBox;
-import com.generatetask.ui.UIComponent;
+import com.generatetask.ui.*;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.inject.Provides;
@@ -37,11 +36,19 @@ public class GenerateTaskPlugin extends Plugin
 {
 	public static final String DEF_FILE_SPRITES = "SpriteDef.json";
 	public static final String DEF_FILE_TASKS = "tasks.json";
+	public static final int TASK_BACKGROUND_SPRITE_ID = -20006;
+	public static final int TASK_COMPLETE_BACKGROUND_SPRITE_ID = -20012;
 
 	private static final String DATA_FOLDER_NAME = "generate-task";
 	public static final int COLLECTION_LOG_WINDOW_WIDTH = 500;
 	public static final int COLLECTION_LOG_WINDOW_HEIGHT = 314;
 	public static final int COLLECTION_LOG_CONTENT_WIDGET_ID = 40697858;
+
+	private static final int DASHBOARD_TAB_SPRITE_ID = -20007;
+	private static final int DASHBOARD_TAB_HOVER_SPRITE_ID = -20008;
+	private static final int TASKLIST_TAB_SPRITE_ID = -20009;
+	private static final int TASKLIST_TAB_HOVER_SPRITE_ID = -20010;
+	private static final int DIVIDER_SPRITE_ID = -20011;
 
 	@Inject
 	private Client client;
@@ -60,7 +67,13 @@ public class GenerateTaskPlugin extends Plugin
 	private SaveData saveData;
 
 	private TaskDashboard taskDashboard;
+	private TaskList taskList;
 	private UICheckBox taskDashboardCheckbox;
+
+	private UIButton taskListTab;
+	private UIButton taskDashboardTab;
+
+	private int activeTab = 0;
 
 	private File playerFile;
 
@@ -159,7 +172,30 @@ public class GenerateTaskPlugin extends Plugin
 	@Subscribe
 	public void onWidgetLoaded(WidgetLoaded e) {
 		if(e.getGroupId() == WidgetInfo.COLLECTION_LOG.getGroupId()) {
-			createTaskDashboard(client.getWidget(40697857));
+			Widget window = client.getWidget(40697857);
+
+			Widget dashboardTabWidget = window.createChild(-1, WidgetType.GRAPHIC);
+			taskDashboardTab = new UIButton(dashboardTabWidget);
+			taskDashboardTab.setSprites(DASHBOARD_TAB_SPRITE_ID, DASHBOARD_TAB_HOVER_SPRITE_ID);
+			taskDashboardTab.setSize(95, 21);
+			taskDashboardTab.setPosition(10, 36);
+			taskDashboardTab.addAction("Switch", this::activateTaskDashboard);
+
+			Widget taskListTabWidget = window.createChild(-1, WidgetType.GRAPHIC);
+			taskListTab = new UIButton(taskListTabWidget);
+			taskListTab.setSprites(TASKLIST_TAB_SPRITE_ID, TASKLIST_TAB_HOVER_SPRITE_ID);
+			taskListTab.setSize(95, 21);
+			taskListTab.setPosition(110, 36);
+			taskListTab.addAction("Switch", this::activateTaskList);
+
+			Widget dividerWidget = window.createChild(-1, WidgetType.GRAPHIC);
+			UIGraphic divider = new UIGraphic(dividerWidget);
+			divider.setSprite(DIVIDER_SPRITE_ID);
+			divider.setSize(480, 1);
+			divider.setPosition(10, 56);
+
+			createTaskDashboard(window);
+			createTaskList(window);
 			createGenerateButton();
 
 			this.taskDashboardCheckbox.setEnabled(false);
@@ -188,6 +224,11 @@ public class GenerateTaskPlugin extends Plugin
 		this.taskDashboard.setVisibility(false);
 	}
 
+	private void createTaskList(Widget window) {
+		this.taskList = new TaskList(window, Arrays.asList(this.tasks), saveData.getCompletedTasks());
+		this.taskList.setVisibility(false);
+	}
+
 	private void toggleTaskDashboard(UIComponent src) {
 		if(this.taskDashboard == null) return;
 
@@ -203,6 +244,8 @@ public class GenerateTaskPlugin extends Plugin
 
 		client.getWidget(COLLECTION_LOG_CONTENT_WIDGET_ID).setHidden(this.taskDashboardCheckbox.isEnabled());
 
+		if(this.taskDashboardCheckbox.isEnabled()) activateTaskDashboard();
+
 		// *Boop*
 		this.client.playSoundEffect(SoundEffectID.UI_BOOP);
 	}
@@ -213,6 +256,7 @@ public class GenerateTaskPlugin extends Plugin
 			return;
 		}
 
+		this.client.playSoundEffect(SoundEffectID.UI_BOOP);
 		List<Task> uniqueTasks = filterCompleteTasks(Arrays.asList(this.tasks));
 
 		if(uniqueTasks.size() <= 0) {
@@ -240,6 +284,7 @@ public class GenerateTaskPlugin extends Plugin
 			return;
 		}
 
+		this.client.playSoundEffect(SoundEffectID.UI_BOOP);
 		addCompletedTask(this.saveData.currentTask);
 		nullCurrentTask();
 
@@ -268,6 +313,20 @@ public class GenerateTaskPlugin extends Plugin
 
 	public List<Task> filterCompleteTasks(List<Task> taskList) {
 		return taskList.stream().filter(t -> this.saveData.getCompletedTasks().get(t.getId()) == null).collect(Collectors.toList());
+	}
+
+	private void activateTaskList() {
+		this.taskListTab.setSprites(TASKLIST_TAB_HOVER_SPRITE_ID);
+		this.taskDashboardTab.setSprites(DASHBOARD_TAB_SPRITE_ID, DASHBOARD_TAB_HOVER_SPRITE_ID);
+		this.taskDashboard.setVisibility(false);
+		this.taskList.setVisibility(true);
+	}
+
+	private void activateTaskDashboard() {
+		this.taskDashboardTab.setSprites(DASHBOARD_TAB_HOVER_SPRITE_ID);
+		this.taskListTab.setSprites(TASKLIST_TAB_SPRITE_ID, TASKLIST_TAB_HOVER_SPRITE_ID);
+		this.taskDashboard.setVisibility(true);
+		this.taskList.setVisibility(false);
 	}
 
 	public void playFailSound() {

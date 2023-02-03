@@ -26,5 +26,29 @@
    {
       "spriteId":-20006,
       "fileName":"currentTask.png"
+   },
+   {
+      "spriteId":-20007,
+      "fileName":"tab-dashboard.png"
+   },
+   {
+      "spriteId":-20008,
+      "fileName":"tab-dashboard-hover.png"
+   },
+   {
+      "spriteId":-20009,
+      "fileName":"tab-tasklist.png"
+   },
+   {
+      "spriteId":-20010,
+      "fileName":"tab-tasklist-hover.png"
+   },
+   {
+      "spriteId":-20011,
+      "fileName":"divider.png"
+   },
+   {
+      "spriteId":-20012,
+      "fileName":"taskBg-complete.png"
    }
 ]

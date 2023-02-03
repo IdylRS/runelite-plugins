@@ -13,5 +13,10 @@
         "id": 2,
         "itemID": 21003,
         "description":"Obtain 1 Elder maul i guess?"
+    },
+    {
+        "id": 3,
+        "itemID": 2123,
+        "description":"Obtain 1 whatever this is?"
     }
 ]
