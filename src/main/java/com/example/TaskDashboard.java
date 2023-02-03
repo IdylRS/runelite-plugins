@@ -111,12 +111,15 @@ public class TaskDashboard extends UIPage {
         this.generateTaskBtn.setSprites(GENERATE_TASK_DISABLED_SPRITE_ID);
         this.generateTaskBtn.clearActions();
 
+        this.generateTaskBtn.addAction("Disabled", plugin::playFailSound);
+
         this.enableCompleteTask();
     }
 
     public void enableGenerateTask() {
+        this.generateTaskBtn.clearActions();
         this.generateTaskBtn.setSprites(GENERATE_TASK_SPRITE_ID, GENERATE_TASK_HOVER_SPRITE_ID);
-        this.generateTaskBtn.addAction("Generate", plugin::generateTask);
+        this.generateTaskBtn.addAction("Generate task", plugin::generateTask);
 
         this.disableCompleteTask();
     }
@@ -124,9 +127,12 @@ public class TaskDashboard extends UIPage {
     public void disableCompleteTask() {
         this.completeTaskBtn.setSprites(COMPLETE_TASK_DISABLED_SPRITE_ID);
         this.completeTaskBtn.clearActions();
+
+        this.completeTaskBtn.addAction("Disabled", plugin::playFailSound);
     }
 
     public void enableCompleteTask() {
+        this.completeTaskBtn.clearActions();
         this.completeTaskBtn.setSprites(COMPLETE_TASK_SPRITE_ID, COMPLETE_TASK_HOVER_SPRITE_ID);
         this.completeTaskBtn.addAction("Complete", plugin::completeTask);
     }

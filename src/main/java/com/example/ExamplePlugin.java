@@ -1,11 +1,12 @@
 package com.example;
 
-import com.example.ui.UIButton;
 import com.example.ui.UICheckBox;
 import com.example.ui.UIComponent;
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.google.inject.Provides;
 import javax.inject.Inject;
+
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.events.GameStateChanged;
@@ -13,14 +14,20 @@ import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.api.widgets.WidgetType;
+import net.runelite.client.RuneLite;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.SpriteManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Scanner;
+import java.util.stream.Collectors;
+
+import static net.runelite.http.api.RuneLiteAPI.GSON;
 
 @Slf4j
 @PluginDescriptor(
@@ -31,6 +38,7 @@ public class ExamplePlugin extends Plugin
 	public static final String DEF_FILE_SPRITES = "SpriteDef.json";
 	public static final String DEF_FILE_TASKS = "tasks.json";
 
+	private static final String DATA_FOLDER_NAME = "generate-task";
 	public static final int COLLECTION_LOG_WINDOW_WIDTH = 500;
 	public static final int COLLECTION_LOG_WINDOW_HEIGHT = 314;
 	public static final int COLLECTION_LOG_CONTENT_WIDGET_ID = 40697858;
@@ -49,11 +57,12 @@ public class ExamplePlugin extends Plugin
 
 	private SpriteDefinition[] spriteDefinitions;
 	private Task[] tasks;
-
-	private Task currentTask;
+	private SaveData saveData;
 
 	private TaskDashboard taskDashboard;
-	private boolean showTaskDashboard = false;
+	private UICheckBox taskDashboardCheckbox;
+
+	private File playerFile;
 
 	@Override
 	protected void startUp() throws Exception
@@ -91,12 +100,63 @@ public class ExamplePlugin extends Plugin
 		return gson.fromJson(definitionReader, classType);
 	}
 
+	/**
+	 * Sets up the playerFile variable, and makes the player file if needed.
+	 */
+	private void setupPlayerFile() {
+		saveData = new SaveData();
+		File playerFolder = new File(RuneLite.RUNELITE_DIR, DATA_FOLDER_NAME);
+		if (!playerFolder.exists()) {
+			playerFolder.mkdirs();
+		}
+		playerFile = new File(playerFolder, client.getAccountHash() + ".txt");
+		if (!playerFile.exists()) {
+			try {
+				playerFile.createNewFile();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} else {
+			loadPlayerData();
+		}
+	}
+
+	private void loadPlayerData() {
+		try {
+			String json = new Scanner(playerFile).useDelimiter("\\Z").next();
+			saveData = GSON.fromJson(json, new TypeToken<SaveData>() {}.getType());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void savePlayerData() {
+		try {
+			PrintWriter w = new PrintWriter(playerFile);
+			String json = GSON.toJson(saveData);
+			w.println(json);
+			w.close();
+			log.debug("Saving player data");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 	@Subscribe
 	public void onGameStateChanged(GameStateChanged gameStateChanged)
 	{
 		if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
 		{
-			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Example says " + config.greeting(), null);
+			if(saveData == null) {
+				setupPlayerFile();
+			}
+		}
+		else if(gameStateChanged.getGameState().equals(GameState.LOGIN_SCREEN)) {
+			if(saveData != null) {
+				savePlayerData();
+			}
+
+			saveData = null;
 		}
 	}
 
@@ -105,6 +165,9 @@ public class ExamplePlugin extends Plugin
 		if(e.getGroupId() == WidgetInfo.COLLECTION_LOG.getGroupId()) {
 			createTaskDashboard(client.getWidget(40697857));
 			createGenerateButton();
+
+			this.taskDashboardCheckbox.setEnabled(false);
+			this.taskDashboard.setVisibility(false);
 		}
 	}
 
@@ -115,68 +178,80 @@ public class ExamplePlugin extends Plugin
 		Widget labelWidget = window.createChild(-1, WidgetType.TEXT);
 
 		// Wrap in checkbox, set size, position, etc.
-		UICheckBox mapToggle = new UICheckBox(toggleWidget, labelWidget);
-		mapToggle.setPosition(360, 10);
-		mapToggle.setName("Task Dashboard");
-		mapToggle.setEnabled(showTaskDashboard);
-		mapToggle.setText("Task Dashboard");
+		taskDashboardCheckbox = new UICheckBox(toggleWidget, labelWidget);
+		taskDashboardCheckbox.setPosition(360, 10);
+		taskDashboardCheckbox.setName("Task Dashboard");
+		taskDashboardCheckbox.setEnabled(false);
+		taskDashboardCheckbox.setText("Task Dashboard");
 		labelWidget.setPos(375, 10);
-		mapToggle.setToggleListener(this::toggleTaskDashboard);
+		taskDashboardCheckbox.setToggleListener(this::toggleTaskDashboard);
 	}
 
 	private void createTaskDashboard(Widget window) {
 		this.taskDashboard = new TaskDashboard(this, window);
-		this.taskDashboard.setVisibility(this.showTaskDashboard);
+		this.taskDashboard.setVisibility(false);
 	}
 
 	private void toggleTaskDashboard(UIComponent src) {
 		if(this.taskDashboard == null) return;
 
-		// The checkbox component
-		UICheckBox toggleCheckbox = (UICheckBox) src;
+		this.taskDashboard.setVisibility(this.taskDashboardCheckbox.isEnabled());
 
-		// Update the map enabled flag
-		this.showTaskDashboard = toggleCheckbox.isEnabled();
-		this.taskDashboard.setVisibility(showTaskDashboard);
-
-		if(currentTask != null) {
-			this.taskDashboard.setTask(currentTask.getDescription(), currentTask.getItemID());
+		if(saveData.currentTask != null) {
+			this.taskDashboard.setTask(this.saveData.currentTask.getDescription(), this.saveData.currentTask.getItemID());
 			this.taskDashboard.disableGenerateTask();
 		}
 		else {
 			nullCurrentTask();
 		}
 
-		client.getWidget(COLLECTION_LOG_CONTENT_WIDGET_ID).setHidden(showTaskDashboard);
+		client.getWidget(COLLECTION_LOG_CONTENT_WIDGET_ID).setHidden(this.taskDashboardCheckbox.isEnabled());
 
 		// *Boop*
 		this.client.playSoundEffect(SoundEffectID.UI_BOOP);
 	}
 
 	public void generateTask() {
-		if(this.currentTask != null || this.tasks == null) {
+		if(this.saveData.currentTask != null || this.tasks == null) {
 			this.taskDashboard.disableGenerateTask();
 			return;
 		}
 
-		int index = (int) Math.floor(Math.random()*this.tasks.length);
+		List<Task> uniqueTasks = filterCompleteTasks(Arrays.asList(this.tasks));
 
-		this.currentTask = tasks[index];
-		this.taskDashboard.setTask(this.currentTask.getDescription(), this.currentTask.getItemID());
-		log.debug("Task generated: "+this.currentTask.getDescription());
+		if(uniqueTasks.size() <= 0) {
+			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "No more tasks left. Looks like you win?", "");
+			playFailSound();
+
+			return;
+		};
+
+		int index = (int) Math.floor(Math.random()*uniqueTasks.size());
+
+
+		this.saveData.currentTask = uniqueTasks.get(index);
+		this.taskDashboard.setTask(this.saveData.currentTask.getDescription(), this.saveData.currentTask.getItemID());
+		log.debug("Task generated: "+this.saveData.currentTask.getDescription());
 
 		this.taskDashboard.disableGenerateTask();
+
+		savePlayerData();
 	}
 
 	public void completeTask() {
-		// TODO: Write completed task IDs to file
+		if(this.saveData.currentTask == null) {
+			this.taskDashboard.enableGenerateTask();
+			return;
+		}
+
+		addCompletedTask(this.saveData.currentTask);
 		nullCurrentTask();
 
-		log.info("Completed a task!");
+		savePlayerData();
 	}
 
 	private void nullCurrentTask() {
-		this.currentTask = null;
+		this.saveData.currentTask = null;
 		this.taskDashboard.setTask("No task.", -1);
 		this.taskDashboard.enableGenerateTask();
 	}
@@ -187,6 +262,20 @@ public class ExamplePlugin extends Plugin
 
 	public static int getCenterY(Widget window, int height) {
 		return (window.getHeight() / 2) - (height / 2);
+	}
+
+	public void addCompletedTask(Task task) {
+		if(this.saveData.getCompletedTasks().get(task.getId()) != null) return;
+
+		this.saveData.getCompletedTasks().put(task.getId(), 0);
+	}
+
+	public List<Task> filterCompleteTasks(List<Task> taskList) {
+		return taskList.stream().filter(t -> this.saveData.getCompletedTasks().get(t.getId()) == null).collect(Collectors.toList());
+	}
+
+	public void playFailSound() {
+		client.playSoundEffect(2277);
 	}
 
 	@Provides
