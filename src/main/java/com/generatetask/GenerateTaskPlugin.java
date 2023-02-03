@@ -246,6 +246,8 @@ public class GenerateTaskPlugin extends Plugin implements MouseWheelListener
 	private void createTaskDashboard(Widget window) {
 		this.taskDashboard = new TaskDashboard(this, window);
 		this.taskDashboard.setVisibility(false);
+
+		if(saveData != null) setTaskCompletionPercent();
 	}
 
 	private void createTaskList(Widget window) {
@@ -318,6 +320,7 @@ public class GenerateTaskPlugin extends Plugin implements MouseWheelListener
 			if(saveData.currentTask != null && taskID == saveData.currentTask.getId()) nullCurrentTask();
 		}
 
+		setTaskCompletionPercent();
 		taskList.refreshTasks(0);
 
 		savePlayerData();
@@ -363,6 +366,13 @@ public class GenerateTaskPlugin extends Plugin implements MouseWheelListener
 
 	public void playFailSound() {
 		client.playSoundEffect(2277);
+	}
+
+	public void setTaskCompletionPercent() {
+		if(taskDashboard == null) return;
+
+		int percent = (int) Math.round(((double) saveData.getCompletedTasks().keySet().size() / (double) this.tasks.length) * 100);
+		taskDashboard.setCompletion(percent);
 	}
 
 	@Provides

@@ -33,6 +33,7 @@ public class TaskDashboard extends UIPage {
 
     private UILabel title;
     private UILabel taskLabel;
+    private UILabel percentCompletion;
 
     private UIGraphic taskImage;
     private UIGraphic taskBg;
@@ -50,19 +51,26 @@ public class TaskDashboard extends UIPage {
         this.title = new UILabel(titleWidget);
         this.title.setFont(FontID.QUILL_CAPS_LARGE);
         this.title.setSize(COLLECTION_LOG_WINDOW_WIDTH, DEFAULT_TASK_DETAILS_HEIGHT);
-        this.title.setPosition(getCenterX(window, COLLECTION_LOG_WINDOW_WIDTH), 80);
+        this.title.setPosition(getCenterX(window, COLLECTION_LOG_WINDOW_WIDTH), 60);
         this.title.setText("Current Task");
+
+        Widget percentWidget = window.createChild(-1, WidgetType.TEXT);
+        this.percentCompletion = new UILabel(percentWidget);
+        this.percentCompletion.setFont(FontID.BOLD_12);
+        this.percentCompletion.setSize(COLLECTION_LOG_WINDOW_WIDTH, 25);
+        this.percentCompletion.setPosition(getCenterX(window, COLLECTION_LOG_WINDOW_WIDTH), COLLECTION_LOG_WINDOW_HEIGHT - 55);
+        this.percentCompletion.setText("<col=ff000>0%</col> Completed");
 
         Widget completeTaskWidget = window.createChild(-1, WidgetType.GRAPHIC);
         this.completeTaskBtn = new UIButton(completeTaskWidget);
         this.completeTaskBtn.setSize(DEFAULT_BUTTON_WIDTH, DEFAULT_BUTTON_HEIGHT);
-        this.completeTaskBtn.setPosition(getCenterX(window, DEFAULT_BUTTON_WIDTH) + (DEFAULT_BUTTON_WIDTH / 2 + 15), getCenterY(window, DEFAULT_BUTTON_HEIGHT) + 100);
+        this.completeTaskBtn.setPosition(getCenterX(window, DEFAULT_BUTTON_WIDTH) + (DEFAULT_BUTTON_WIDTH / 2 + 15), getCenterY(window, DEFAULT_BUTTON_HEIGHT) + 80);
         this.completeTaskBtn.setSprites(COMPLETE_TASK_SPRITE_ID, COMPLETE_TASK_HOVER_SPRITE_ID);
 
         Widget generateTaskWidget = window.createChild(-1, WidgetType.GRAPHIC);
         this.generateTaskBtn = new UIButton(generateTaskWidget);
         this.generateTaskBtn.setSize(DEFAULT_BUTTON_WIDTH, DEFAULT_BUTTON_HEIGHT);
-        this.generateTaskBtn.setPosition(getCenterX(window, DEFAULT_BUTTON_WIDTH) - (DEFAULT_BUTTON_WIDTH / 2 + 15), getCenterY(window, DEFAULT_BUTTON_HEIGHT) + 100);
+        this.generateTaskBtn.setPosition(getCenterX(window, DEFAULT_BUTTON_WIDTH) - (DEFAULT_BUTTON_WIDTH / 2 + 15), getCenterY(window, DEFAULT_BUTTON_HEIGHT) + 80);
         this.generateTaskBtn.setSprites(GENERATE_TASK_SPRITE_ID, GENERATE_TASK_HOVER_SPRITE_ID);
 
         this.add(this.title);
@@ -71,11 +79,12 @@ public class TaskDashboard extends UIPage {
         this.add(this.taskImage);
         this.add(this.completeTaskBtn);
         this.add(this.generateTaskBtn);
+        this.add(this.percentCompletion);
     }
 
     private void createTaskDetails() {
         final int POS_X = getCenterX(window, DEFAULT_TASK_DETAILS_WIDTH);
-        final int POS_Y = getCenterY(window, DEFAULT_TASK_DETAILS_HEIGHT)+35;
+        final int POS_Y = getCenterY(window, DEFAULT_TASK_DETAILS_HEIGHT)+15;
 
         Widget taskBgWidget = window.createChild(-1, WidgetType.GRAPHIC);
         this.taskBg = new UIGraphic(taskBgWidget);
@@ -104,6 +113,30 @@ public class TaskDashboard extends UIPage {
     public void setTask(String desc, int taskItemID) {
         this.taskLabel.setText(desc);
         this.taskImage.setItem(taskItemID);
+    }
+
+    public void setCompletion(int percent) {
+        this.percentCompletion.setText("<col="+getCompletionColor(percent)+">"+percent+"%</col> Completed");
+    }
+
+    private String getCompletionColor(double percent) {
+        int max = 255;
+        int amount = (int) Math.round(((percent % 50) / 50) * max);
+
+        if(percent == 100) {
+            return "00ff00";
+        }
+        else if(percent > 50) {
+            int redValue = max - amount;
+            return String.format("%02x", redValue)+"ff00";
+
+        }
+        else if(percent == 50) {
+            return "ffff00";
+        }
+        else {
+            return "ff"+String.format("%02x", amount)+"00";
+        }
     }
 
     public void disableGenerateTask() {
