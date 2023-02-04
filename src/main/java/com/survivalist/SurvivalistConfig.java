@@ -15,4 +15,13 @@ public interface SurvivalistConfig extends Config
 	default boolean showAgeBoss() {
 		return true;
 	}
+
+	@ConfigItem(
+			keyName = "pause",
+			description = "Pause all status effects and time",
+			name = "Pause"
+	)
+	default boolean pause() {
+		return false;
+	}
 }

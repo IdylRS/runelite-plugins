@@ -301,6 +301,8 @@ public class SurvivalistPlugin extends Plugin
 
 	@Subscribe
 	public void onGameTick(GameTick e) {
+		if(config.pause()) return;
+
 		decrementStatusEffects();
 
 		unlockData.updateGameTime();
@@ -365,7 +367,7 @@ public class SurvivalistPlugin extends Plugin
 
 	@Subscribe
 	public void onStatChanged(StatChanged e) {
-		if(skillLevels.get(e.getSkill()) != null) {
+		if(skillLevels.get(e.getSkill()) != null && !config.pause()) {
 			if(e.getLevel() > skillLevels.get(e.getSkill())) {
 				unlockData.getStatusEffects().put(StatusEffect.PROUD, 100);
 			}
@@ -380,7 +382,7 @@ public class SurvivalistPlugin extends Plugin
 
 			}
 		}
-		if(e.getSkill() == Skill.PRAYER) {
+		if(e.getSkill() == Skill.PRAYER && !config.pause()) {
 			int level = client.getRealSkillLevel(Skill.PRAYER);
 			int boosted = client.getBoostedSkillLevel(Skill.PRAYER);
 
@@ -398,13 +400,15 @@ public class SurvivalistPlugin extends Plugin
 
 	@Subscribe
 	public void onItemContainerChanged(ItemContainerChanged e) {
-		if(e.getContainerId() == InventoryID.INVENTORY.getId() || e.getContainerId() == InventoryID.EQUIPMENT.getId()) {
+		if(e.getContainerId() == InventoryID.INVENTORY.getId() || e.getContainerId() == InventoryID.EQUIPMENT.getId() && !config.pause()) {
 			checkWeight();
 		}
 	}
 
 	@Subscribe
 	public void onMenuEntryAdded(MenuEntryAdded e) {
+		if(config.pause()) return;
+
 		if(e.getOption().startsWith("Walk here")) {
 			Tile tile = client.getSelectedSceneTile();
 			if(tile == null) return;
@@ -425,6 +429,8 @@ public class SurvivalistPlugin extends Plugin
 
 	@Subscribe
 	public void onMenuOptionClicked(MenuOptionClicked e) {
+		if(config.pause()) return;
+
 		if(e.getMenuOption().equals("Eat") && unlockData.getStatusEffects().get(StatusEffect.EATING) == 0) {
 			unlockData.addHunger(itemStats.get(e.getItemId()));
 		}
@@ -442,7 +448,7 @@ public class SurvivalistPlugin extends Plugin
 	@Subscribe
 	public void onNpcLootReceived(NpcLootReceived e) {
 		checkForAgeCompletion(e.getNpc().getId());
-		if(client.getVarbitValue(Varbits.IN_WILDERNESS) == 1) {
+		if(client.getVarbitValue(Varbits.IN_WILDERNESS) == 1 && !config.pause()) {
 			double roll = Math.random()*1000;
 			if(roll < e.getNpc().getCombatLevel()) {
 				addGroundItem(e.getNpc().getLocalLocation(), Skill.PRAYER);
@@ -488,6 +494,7 @@ public class SurvivalistPlugin extends Plugin
 		int plane = client.getPlane();
 
 		List<Integer> returnVal = new ArrayList<>();
+		int closest = -1;
 
 		for(int x=0;x<Constants.SCENE_SIZE;++x) {
 			for(int y=0;y<Constants.SCENE_SIZE;++y) {
@@ -498,10 +505,9 @@ public class SurvivalistPlugin extends Plugin
 				for(GameObject go : tile.getGameObjects()) {
 					if(go != null && go.getId() == FIRE_OBJECT_ID) {
 						int distance = client.getLocalPlayer().getWorldLocation().distanceTo(tile.getWorldLocation());
-						if(distance <= WARMTH_DISTANCE) {
+						if(distance <= WARMTH_DISTANCE && distance > closest) {
 							returnVal.add(0, FireType.WARMING.ordinal());
 							returnVal.add(1, distance);
-							return returnVal;
 						}
 					}
 					else if (go != null && checkForBrightness(go)) {
