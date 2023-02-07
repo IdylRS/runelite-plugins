@@ -24,4 +24,13 @@ public interface SurvivalistConfig extends Config
 	default boolean pause() {
 		return false;
 	}
+
+	@ConfigItem(
+			keyName = "drawFires",
+			description = "Draws overlays on valid fires",
+			name = "Highlight Fires"
+	)
+	default boolean drawFires() {
+		return false;
+	}
 }

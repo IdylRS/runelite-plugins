@@ -44,45 +44,78 @@ public class SurvivalistPlugin extends Plugin
 	public static final String CONFIG_KEY = "survivalist";
 	public static final String DATA_FOLDER_NAME = "survivalist";
 
-	private final int FIRE_OBJECT_ID = 26185;
-	private final double WARMTH_DISTANCE = 10;
+	private final double WARMTH_DISTANCE = 5;
+	private final double LIGHT_DISTANCE = 10;
 	private static final int PRAYER_TAB = 35454980;
 	private static final int PRAYER_ORB = 10485777;
 	private static final int QUICK_PRAYER = 10485779;
 	private static final int MAGIC_TAB = 14286849;
 	private static final List<Integer> VALID_FIRES = Arrays.asList(
-			ObjectID.STANDING_TORCH,ObjectID.FIRE_WALL,ObjectID.FIRE_WALL_2909,ObjectID.FIRE,ObjectID.FIRE_3775,ObjectID.FLAMING_FIRE_ALTAR,
-			ObjectID.FIRE_4265,ObjectID.FIRE_4266,ObjectID.FIREPLACE,ObjectID.FIREPLACE_4650,ObjectID.FIREPLACE_5165,
-			ObjectID.FIRE_5249,ObjectID.STANDING_TORCH_5494,ObjectID.FIRE_5499,ObjectID.STANDING_TORCH_5881,ObjectID.FIRE_5981,ObjectID.BLUE_FIRE,ObjectID.FIREPLACE_6093,ObjectID.FIREPLACE_6094,
-			ObjectID.FIREPLACE_6095,ObjectID.FIREPLACE_6096,ObjectID.STANDING_TORCH_6404,ObjectID.STANDING_TORCH_6406,ObjectID.STANDING_TORCH_6408,ObjectID.STANDING_TORCH_6410,ObjectID.STANDING_TORCH_6412,ObjectID.STANDING_TORCH_6413,ObjectID.STANDING_TORCH_6414,ObjectID.STANDING_TORCH_6415,ObjectID.STANDING_TORCH_6416,
-			ObjectID.CLAY_FIREPLACE,ObjectID.CLAY_FIREPLACE_6781,ObjectID.LIMESTONE_FIREPLACE,ObjectID.LIMESTONE_FIREPLACE_6783,ObjectID.MARBLE_FIREPLACE,ObjectID.MARBLE_FIREPLACE_6785,ObjectID.OGRE_FIRE,ObjectID.STANDING_TORCH_6896,
-			ObjectID.FIREPLACE_7185,ObjectID.FIREPLACE_8712,ObjectID.FIREPLACE_9439,ObjectID.FIREPLACE_9440,ObjectID.FIREPLACE_9441,ObjectID.FIRE_9735,ObjectID.FIREPLACE_10058,ObjectID.STANDING_TORCH_10178,
-			ObjectID.STANDING_TORCH_10179,ObjectID.FIRE_10433,ObjectID.TORCH,ObjectID.FIRE_10660,ObjectID.FIREPLACE_10824,ObjectID.STANDING_TORCH_11606,ObjectID.MUSHROOM_TORCH,ObjectID.MUSHROOM_TORCH_12006,
-			ObjectID.DRAGONFIRE,ObjectID.FIRE_12796,ObjectID.TORCH_13200,ObjectID.TORCH_13201,ObjectID.TORCH_13202,ObjectID.TORCH_13203,ObjectID.TORCH_13204,ObjectID.TORCH_13205,ObjectID.TORCH_13206,ObjectID.TORCH_13207,ObjectID.FIRE_13337,
-			ObjectID.TORCH_13341,ObjectID.FIREPIT,ObjectID.FIREPIT_WITH_HOOK,ObjectID.FIREPIT_WITH_HOOK_13530,ObjectID.FIREPIT_WITH_POT,ObjectID.FIREPIT_WITH_POT_13532,ObjectID.FIREBOX,
-			ObjectID.FIREBOX_13595,ObjectID.FIREBOX_13596,ObjectID.FIRE_13881,ObjectID.FIRE_14169,ObjectID.FIRE_15156,ObjectID.STANDING_TORCH_15158,
-			ObjectID.TORCH_17237,ObjectID.LIMESTONE_FIREPLACE_17325,ObjectID.FIREPLACE_17640,
+		ObjectID.STANDING_TORCH,ObjectID.FIRE_WALL,ObjectID.FIRE_WALL_2909,ObjectID.FIRE,ObjectID.FIRE_3775,ObjectID.FLAMING_FIRE_ALTAR,
+		ObjectID.FIRE_4265,ObjectID.FIRE_4266,ObjectID.FIREPLACE,ObjectID.FIREPLACE_4650,ObjectID.FIREPLACE_5165,
+		ObjectID.FIRE_5249,ObjectID.STANDING_TORCH_5494,ObjectID.FIRE_5499,ObjectID.STANDING_TORCH_5881,ObjectID.FIRE_5981,ObjectID.BLUE_FIRE,ObjectID.FIREPLACE_6093,ObjectID.FIREPLACE_6094,
+		ObjectID.FIREPLACE_6095,ObjectID.FIREPLACE_6096,ObjectID.STANDING_TORCH_6404,ObjectID.STANDING_TORCH_6406,ObjectID.STANDING_TORCH_6408,ObjectID.STANDING_TORCH_6410,ObjectID.STANDING_TORCH_6412,ObjectID.STANDING_TORCH_6413,ObjectID.STANDING_TORCH_6414,ObjectID.STANDING_TORCH_6415,ObjectID.STANDING_TORCH_6416,
+		ObjectID.OGRE_FIRE,ObjectID.STANDING_TORCH_6896,
+		ObjectID.FIREPLACE_7185,ObjectID.FIREPLACE_8712,ObjectID.FIREPLACE_9439,ObjectID.FIREPLACE_9440,ObjectID.FIREPLACE_9441,ObjectID.FIRE_9735,ObjectID.FIREPLACE_10058,ObjectID.STANDING_TORCH_10178,
+		ObjectID.STANDING_TORCH_10179,ObjectID.FIRE_10433,ObjectID.TORCH,ObjectID.FIRE_10660,ObjectID.FIREPLACE_10824,ObjectID.STANDING_TORCH_11606,ObjectID.MUSHROOM_TORCH,ObjectID.MUSHROOM_TORCH_12006,
+		ObjectID.DRAGONFIRE,ObjectID.FIRE_12796,ObjectID.TORCH_13200,ObjectID.TORCH_13201,ObjectID.TORCH_13202,ObjectID.TORCH_13203,ObjectID.TORCH_13204,ObjectID.TORCH_13205,ObjectID.TORCH_13206,ObjectID.TORCH_13207,ObjectID.FIRE_13337,
+		ObjectID.TORCH_13341,ObjectID.FIREPIT,ObjectID.FIREPIT_WITH_HOOK,ObjectID.FIREPIT_WITH_HOOK_13530,ObjectID.FIREPIT_WITH_POT,ObjectID.FIREPIT_WITH_POT_13532,ObjectID.FIREBOX,
+		ObjectID.FIREBOX_13595,ObjectID.FIREBOX_13596,ObjectID.FIRE_13881,ObjectID.FIRE_14169,ObjectID.FIRE_15156,ObjectID.STANDING_TORCH_15158,
+		ObjectID.TORCH_17237,ObjectID.LIMESTONE_FIREPLACE_17325,ObjectID.FIREPLACE_17640,
+		ObjectID.FIREPLACE_17641,ObjectID.FIREPLACE_17642,ObjectID.FIREPLACE_17643,ObjectID.THE_MIDDLE_OF_A_FIREPLACE,ObjectID.FIREPLACE_18039,ObjectID.CAMPFIRE,ObjectID.CAMPFIRE_19884,
+		ObjectID.FIRE_20000,ObjectID.FIRE_20001,ObjectID.STANDING_TORCH_20716,ObjectID.TORCH_21465,ObjectID.FIRE_21620,ObjectID.TORCH_21667,ObjectID.FIREPLACE_21795,ObjectID.FIRE_23046,
+		ObjectID.CAMP_FIRE, ObjectID.CAMPING_FIRE, ObjectID.FIREPLACE_24969, ObjectID.FIREPLACE_24970,
+		ObjectID.FIRE_25155, ObjectID.FIRE_25156, ObjectID.CAMPFIRE_25374,ObjectID.FIRE_25465,
+		ObjectID.FIREPLACE_26179, ObjectID.FIRE_26185, ObjectID.FIRE_26186,ObjectID.FIRE_26575, ObjectID.FIRE_26576, ObjectID.FIRE_26577, ObjectID.FIRE_26578,
+		ObjectID.FIRE_28791, ObjectID.CAMPFIRE_29085,
+		ObjectID.BONFIRE, ObjectID.MAGICAL_FIRE, ObjectID.FIRE_30021, ObjectID.FIREPLACE_30136, ObjectID.FIREPLACE_30137,
+		ObjectID.FIREPLACE_30138, ObjectID.FIRE_PIT, ObjectID.FIRE_31798, ObjectID.TORCH_32118, ObjectID.FIRE_32297,
+		ObjectID.FIRE_TRAP, ObjectID.FIRE_PIT_33310, ObjectID.FIRE_33311, ObjectID.FIRE_OF_DOMINATION,
+		ObjectID.FIRE_OF_NOURISHMENT, ObjectID.FIRE_OF_ETERNAL_LIGHT, ObjectID.FIRE_OF_UNSEASONAL_WARMTH, ObjectID.FIRE_OF_DEHUMIDIFICATION, ObjectID.TORCH_34345,
+		ObjectID.STANDING_TORCH_34346, ObjectID.FIRE_34682, ObjectID.ANCIENT_FIRE, ObjectID.TORCH_34856, ObjectID.FIRE_35810,
+		ObjectID.FIRE_35811, ObjectID.FIRE_35812, ObjectID.FIRE_35912, ObjectID.FIRE_35913, ObjectID.MAGICAL_FIRE_37994,
+		ObjectID.MAGICAL_FIRE_37995, ObjectID.MAGICAL_FIRE_37996, ObjectID.FIRE_38427, ObjectID.TORCH_38512, ObjectID.TORCH_38513,
+		ObjectID.TORCH_38514, ObjectID.TORCH_38555, ObjectID.TORCH_38562, ObjectID.TORCH_40550, ObjectID.TORCH_40551, ObjectID.FIRE_40728,ObjectID.FIRE_41316, ObjectID.FIREPLACE_41654, ObjectID.FIREPLACE_42159,
+		ObjectID.FIRE_43146, ObjectID.FIRE_43475,ObjectID.FIRE_ENERGY, ObjectID.FIRE_ENERGY_43779,
+		ObjectID.FIRE_44021, ObjectID.FIRE_44022, ObjectID.FIRE_44023,
+		ObjectID.FIRE_44024, ObjectID.FIRE_44025, ObjectID.FIRE_44026, ObjectID.FIRE_44027, ObjectID.FIRE_44028, ObjectID.TORCH_44553,
+		ObjectID.FIRE_45334, ObjectID.TORCH_46180, ObjectID.CAMPFIRE_46405, ObjectID.DECORATED_FESTIVE_FIREPLACE, ObjectID.CAMPFIRE_46809
+	);
+
+	private List<Integer> WARMING_FIRES = Arrays.asList(
+			ObjectID.FIRE_WALL,ObjectID.FIRE_WALL_2909,ObjectID.FIRE,ObjectID.FIRE_3775,ObjectID.FLAMING_FIRE_ALTAR,
+			ObjectID.FIRE_4265,ObjectID.FIRE_4266,ObjectID.FIREPLACE,ObjectID.FIREPLACE_4650,ObjectID.FIREPLACE_5165,ObjectID.FIRE_5249,
+			ObjectID.FIRE_5499,ObjectID.FIRE_5981,ObjectID.BLUE_FIRE,ObjectID.FIREPLACE_6093,ObjectID.FIREPLACE_6094,ObjectID.FIREPLACE_6095,ObjectID.FIREPLACE_6096,ObjectID.OGRE_FIRE,
+			ObjectID.FIREPLACE_7185,ObjectID.FIREPLACE_8712,ObjectID.FIREPLACE_9439,ObjectID.FIREPLACE_9440,ObjectID.FIREPLACE_9441,ObjectID.FIRE_9735,ObjectID.FIREPLACE_10058,
+			ObjectID.FIRE_10433,ObjectID.FIRE_10660,ObjectID.FIREPLACE_10824,ObjectID.DRAGONFIRE,ObjectID.FIRE_12796,ObjectID.FIRE_13337,
+			ObjectID.FIREPIT,ObjectID.FIREPIT_WITH_HOOK,ObjectID.FIREPIT_WITH_HOOK_13530,ObjectID.FIREPIT_WITH_POT,ObjectID.FIREPIT_WITH_POT_13532,ObjectID.FIREBOX,
+			ObjectID.FIREBOX_13595,ObjectID.FIREBOX_13596,ObjectID.FIRE_13881,ObjectID.FIRE_14169,ObjectID.FIRE_15156,ObjectID.LIMESTONE_FIREPLACE_17325,ObjectID.FIREPLACE_17640,
 			ObjectID.FIREPLACE_17641,ObjectID.FIREPLACE_17642,ObjectID.FIREPLACE_17643,ObjectID.THE_MIDDLE_OF_A_FIREPLACE,ObjectID.FIREPLACE_18039,ObjectID.CAMPFIRE,ObjectID.CAMPFIRE_19884,
-			ObjectID.FIRE_20000,ObjectID.FIRE_20001,ObjectID.STANDING_TORCH_20716,ObjectID.TORCH_21465,ObjectID.FIRE_21620,ObjectID.TORCH_21667,ObjectID.FIREPLACE_21795,ObjectID.FIRE_23046,
+			ObjectID.FIRE_20000,ObjectID.FIRE_20001,ObjectID.FIRE_21620,ObjectID.FIREPLACE_21795,ObjectID.FIRE_23046,
 			ObjectID.CAMP_FIRE, ObjectID.CAMPING_FIRE, ObjectID.FIREPLACE_24969, ObjectID.FIREPLACE_24970,
 			ObjectID.FIRE_25155, ObjectID.FIRE_25156, ObjectID.CAMPFIRE_25374,ObjectID.FIRE_25465,
-			ObjectID.FIREPLACE_26179, ObjectID.FIRE_26185, ObjectID.FIRE_26186, ObjectID.FIRE_RUNE, ObjectID.FIRE_26575, ObjectID.FIRE_26576, ObjectID.FIRE_26577, ObjectID.FIRE_26578,
+			ObjectID.FIREPLACE_26179, ObjectID.FIRE_26185, ObjectID.FIRE_26186, ObjectID.FIRE_26575,
+			ObjectID.FIRE_26576, ObjectID.FIRE_26577, ObjectID.FIRE_26578,
 			ObjectID.FIRE_28791, ObjectID.CAMPFIRE_29085,
-			ObjectID.BONFIRE, ObjectID.MAGICAL_FIRE, ObjectID.FIRE_30021, ObjectID.FIREPLACE_30136, ObjectID.FIREPLACE_30137,
-			ObjectID.FIREPLACE_30138, ObjectID.FIRE_PIT, ObjectID.FIRE_31798, ObjectID.TORCH_32118, ObjectID.FIRE_32297,
-			ObjectID.FIRE_TRAP, ObjectID.FIRE_PIT_33310, ObjectID.FIRE_33311, ObjectID.OLD_FIRE_PIT, ObjectID.FIRE_OF_DOMINATION,
-			ObjectID.FIRE_OF_NOURISHMENT, ObjectID.FIRE_OF_ETERNAL_LIGHT, ObjectID.FIRE_OF_UNSEASONAL_WARMTH, ObjectID.FIRE_OF_DEHUMIDIFICATION, ObjectID.TORCH_34345,
-			ObjectID.STANDING_TORCH_34346, ObjectID.FIRE_34682, ObjectID.ANCIENT_FIRE, ObjectID.TORCH_34856, ObjectID.FIRE_35810,
+			ObjectID.BONFIRE, ObjectID.FIRE_30021, ObjectID.FIREPLACE_30136, ObjectID.FIREPLACE_30137,
+			ObjectID.FIREPLACE_30138, ObjectID.FIRE_PIT, ObjectID.FIRE_31798,  ObjectID.FIRE_32297,
+			ObjectID.FIRE_TRAP, ObjectID.FIRE_PIT_33310, ObjectID.FIRE_33311, ObjectID.FIRE_OF_DOMINATION,
+			ObjectID.FIRE_OF_NOURISHMENT, ObjectID.FIRE_OF_ETERNAL_LIGHT, ObjectID.FIRE_OF_UNSEASONAL_WARMTH, ObjectID.FIRE_OF_DEHUMIDIFICATION,
+			ObjectID.FIRE_34682, ObjectID.ANCIENT_FIRE,  ObjectID.FIRE_35810,
 			ObjectID.FIRE_35811, ObjectID.FIRE_35812, ObjectID.FIRE_35912, ObjectID.FIRE_35913, ObjectID.MAGICAL_FIRE_37994,
-			ObjectID.MAGICAL_FIRE_37995, ObjectID.MAGICAL_FIRE_37996, ObjectID.FIRE_38427, ObjectID.TORCH_38512, ObjectID.TORCH_38513,
-			ObjectID.TORCH_38514, ObjectID.TORCH_38555, ObjectID.TORCH_38562, ObjectID.TORCH_40550, ObjectID.TORCH_40551, ObjectID.FIRE_40728,
-			ObjectID.DECORATED_LIMESTONE_FIREPLACE, ObjectID.DECORATED_LIMESTONE_FIREPLACE_40775, ObjectID.DECORATED_MARBLE_FIREPLACE,
-			ObjectID.DECORATED_MARBLE_FIREPLACE_40777, ObjectID.FIRE_41316, ObjectID.FIREPLACE_41654, ObjectID.FIREPLACE_42159,
-			ObjectID.FIRE_43146, ObjectID.FIRE_43475,ObjectID.FIRE_ENERGY, ObjectID.FIRE_ENERGY_43779,
+			ObjectID.MAGICAL_FIRE_37995, ObjectID.MAGICAL_FIRE_37996, ObjectID.FIRE_38427, ObjectID.FIRE_40728,
+			ObjectID.FIRE_41316, ObjectID.FIREPLACE_41654, ObjectID.FIREPLACE_42159,ObjectID.FIRE_43146, ObjectID.FIRE_43475,
 			ObjectID.FIRE_44021, ObjectID.FIRE_44022, ObjectID.FIRE_44023,
-			ObjectID.FIRE_44024, ObjectID.FIRE_44025, ObjectID.FIRE_44026, ObjectID.FIRE_44027, ObjectID.FIRE_44028, ObjectID.TORCH_44553,
-			ObjectID.FIRE_45334, ObjectID.TORCH_46180, ObjectID.CAMPFIRE_46405, ObjectID.DECORATED_FESTIVE_FIREPLACE, ObjectID.CAMPFIRE_46809
-		);
+			ObjectID.FIRE_44024, ObjectID.FIRE_44025, ObjectID.FIRE_44026, ObjectID.FIRE_44027, ObjectID.FIRE_44028,
+			ObjectID.FIRE_45334,  ObjectID.CAMPFIRE_46405, ObjectID.CAMPFIRE_46809
+	);
+
+	private List<Integer> VALID_LIGHT_SOURCE = Arrays.asList(
+		ItemID.LIT_CANDLE, ItemID.LIT_BLACK_CANDLE, ItemID.LIT_TORCH, ItemID.BULLSEYE_LANTERN_4550, ItemID.BRUMA_TORCH,
+		ItemID.OIL_LANTERN_4539, ItemID.CANDLE_LANTERN_4531, ItemID.OIL_LAMP, ItemID.OIL_LAMP_4524,
+		ItemID.SAPPHIRE_LANTERN_4702, ItemID.EMERALD_LANTERN_9065, ItemID.FIREMAKING_CAPE, ItemID.MINING_HELMET_5014,
+		ItemID.FIREMAKING_CAPET
+	);
 
 	@Inject
 	private Client client;
@@ -104,6 +137,9 @@ public class SurvivalistPlugin extends Plugin
 
 	@Inject
 	private SurvivalistConfig config;
+
+	@Inject
+	private SurvivalistTileOverlay tileOverlay;
 
 	private LifePointsBarOverlay lifePointsBarOverlay;
 
@@ -135,6 +171,11 @@ public class SurvivalistPlugin extends Plugin
 	private boolean sentGameOver = false;
 	private boolean nearFire = false;
 
+	public List<Tile> nearbyFires = new ArrayList<>();
+	public List<Tile> nearbyWarmingFires = new ArrayList<>();
+	public Tile closestFire;
+	public Tile closestWarmingFire;
+
 	@Override
 	protected void startUp() throws Exception
 	{
@@ -144,6 +185,7 @@ public class SurvivalistPlugin extends Plugin
 		overlayManager.add(itemOverlay);
 		overlayManager.add(survivalistOverlay);
 		overlayManager.add(lifePointsBarOverlay);
+		overlayManager.add(tileOverlay);
 		if(client.getGameState() == GameState.LOGGED_IN) {
 			if(this.overlay != null) this.overlay.setHidden(false);
 			else clientThread.invokeLater(this::createNightTimeOverlay);
@@ -292,6 +334,8 @@ public class SurvivalistPlugin extends Plugin
 			if(unlockData != null) savePlayerData();
 			skillLevels = new HashMap<>();
 			unlockData = null;
+
+			statusEffectInfoboxs.keySet().forEach(s -> infoBoxManager.removeInfoBox(statusEffectInfoboxs.get(s)));
 			statusEffectInfoboxs.clear();
 		}
 		else if(gameStateChanged.getGameState().equals(GameState.LOGGED_IN)) {
@@ -319,20 +363,22 @@ public class SurvivalistPlugin extends Plugin
 			}
 		}
 
-		List<Integer> fireDistance = checkForFire();
+		int fireDistance = checkForFire();
 
 		if(tod == TimeOfDay.NIGHT) {
 			unlockData.getStatusEffects().put(StatusEffect.COLD, 1);
 		}
 
-		if(fireDistance.size() > 0) {
+		if(fireDistance > -1) {
 			nearFire = true;
-			if (fireDistance.get(0) == FireType.WARMING.ordinal()) {
+
+			if(closestWarmingFire != null) {
 				unlockData.getStatusEffects().put(StatusEffect.WARM, 1);
 				unlockData.getStatusEffects().put(StatusEffect.COLD, 0);
 			}
+
 			if (tod == TimeOfDay.NIGHT) {
-				double brightness = 110 - (fireDistance.get(1) / WARMTH_DISTANCE) * 100;
+				double brightness = 110 - (fireDistance / LIGHT_DISTANCE) * 100;
 				if (tod == TimeOfDay.NIGHT) this.overlay.setOpacity((int) (TimeOfDay.NIGHT.getDarkness() + brightness));
 			}
 		}
@@ -489,12 +535,16 @@ public class SurvivalistPlugin extends Plugin
 		overlay.revalidate();
 	}
 
-	private List<Integer> checkForFire() {
+	private int checkForFire() {
 		Tile[][][] tiles = client.getScene().getTiles();
 		int plane = client.getPlane();
 
-		List<Integer> returnVal = new ArrayList<>();
-		int closest = -1;
+		int closest = hasLightSource() ? 0 : -1;
+		int closestWarming = (int) WARMTH_DISTANCE+1;
+		nearbyFires.clear();
+		nearbyWarmingFires.clear();
+		closestFire = null;
+		closestWarmingFire = null;
 
 		for(int x=0;x<Constants.SCENE_SIZE;++x) {
 			for(int y=0;y<Constants.SCENE_SIZE;++y) {
@@ -503,27 +553,45 @@ public class SurvivalistPlugin extends Plugin
 				if(tile == null) continue;
 
 				for(GameObject go : tile.getGameObjects()) {
-					if(go != null && go.getId() == FIRE_OBJECT_ID) {
+					if (go != null && VALID_FIRES.contains(go.getId())) {
+						boolean isWarming = WARMING_FIRES.contains(go.getId());
+						nearbyFires.add(tile);
+						if(isWarming) nearbyWarmingFires.add(tile);
 						int distance = client.getLocalPlayer().getWorldLocation().distanceTo(tile.getWorldLocation());
-						if(distance <= WARMTH_DISTANCE && distance > closest) {
-							returnVal.add(0, FireType.WARMING.ordinal());
-							returnVal.add(1, distance);
+
+						if(distance <= LIGHT_DISTANCE) {
+							if(distance < closest || closest == -1){
+								closest = distance;
+								closestFire = tile;
+							}
+
+							if(isWarming && distance < closestWarming) {
+								closestWarming = distance;
+								closestWarmingFire = tile;
+							}
 						}
-					}
-					else if (go != null && checkForBrightness(go)) {
-						int distance = client.getLocalPlayer().getWorldLocation().distanceTo(tile.getWorldLocation());
-						returnVal.add(0, FireType.BRIGHTENING.ordinal());
-						returnVal.add(1, distance);
 					}
 				}
 			}
 		}
 
-		return returnVal;
+		return closest;
 	}
 
-	private boolean checkForBrightness(GameObject gameObject) {
-		return VALID_FIRES.contains(gameObject);
+	private boolean hasLightSource() {
+		if (client.getItemContainer(InventoryID.INVENTORY) != null) {
+			for (Item item : client.getItemContainer(InventoryID.INVENTORY).getItems()) {
+				if (VALID_LIGHT_SOURCE.contains(item.getId())) return true;
+			}
+		}
+
+		if (client.getItemContainer(InventoryID.EQUIPMENT) != null) {
+			for (Item item : client.getItemContainer(InventoryID.EQUIPMENT).getItems()) {
+				if (VALID_LIGHT_SOURCE.contains(item.getId())) return true;
+			}
+		}
+
+		return false;
 	}
 
 	private void checkWeight() {
@@ -563,12 +631,11 @@ public class SurvivalistPlugin extends Plugin
 					else if(item.getId() == ItemID.LOGS) numLogs++;
 				}
 
-				List<Integer> fires = checkForFire();
-
+				checkForFire();
 				if(numLogs < 2 || numWool < 2) {
 					clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You need 2 logs of the same type and 2 wool to sleep.", ""));
 				}
-				else if(fires.size() > 0 && fires.get(0) == FireType.WARMING.ordinal()){
+				else if(closestWarmingFire != null){
 					unlockData.sleep();
 					clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "You craft a makeshift bed and fall fast asleep.", ""));
 					unlockData.getStatusEffects().put(StatusEffect.RESTED, 100);
@@ -643,7 +710,7 @@ public class SurvivalistPlugin extends Plugin
 			}
 		}
 
-		if(!valid) return true;
+		if(!valid || name.contains("cape")) return true;
 
 		for(String prefix : prefixes) {
 			if(name.startsWith(prefix.toLowerCase())) return false;
