@@ -6,8 +6,8 @@ import lombok.Getter;
 public enum TimeOfDay {
     DAWN("Dawn", 0, 200, 150),
     DAY("Day", 200, 1300, 255),
-    DUSK("Dusk", 1300, 1500, 120),
-    NIGHT("Night", 1500, 2400, 25);
+    DUSK("Dusk", 1500, 1700, 120),
+    NIGHT("Night", 1700, 2400, 25);
 
     private String name;
     private int startTick;
