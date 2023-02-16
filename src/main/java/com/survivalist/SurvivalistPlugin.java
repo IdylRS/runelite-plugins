@@ -188,7 +188,7 @@ public class SurvivalistPlugin extends Plugin
 		overlayManager.add(tileOverlay);
 		if(client.getGameState() == GameState.LOGGED_IN) {
 			if(this.overlay != null) this.overlay.setHidden(false);
-			else clientThread.invokeLater(this::createNightTimeOverlay);
+			else clientThread.invokeLater(() -> createNightTimeOverlay());
 			setupPlayerFile();
 		}
 	}
@@ -285,8 +285,8 @@ public class SurvivalistPlugin extends Plugin
 
 	@Subscribe
 	public void onWidgetLoaded(WidgetLoaded e) {
-		if(e.getGroupId() == 548) {
-			createNightTimeOverlay();
+		if(e.getGroupId() == 548 || e.getGroupId() == 161) {
+			createNightTimeOverlay(e.getGroupId());
 		}
 		// Prayer menu loaded
 		else if(e.getGroupId() == 160 && quickPrayer == null) {
@@ -369,7 +369,8 @@ public class SurvivalistPlugin extends Plugin
 			unlockData.getStatusEffects().put(StatusEffect.COLD, 1);
 		}
 
-		if(fireDistance > -1) {
+		double lightSourceFactor = getLightSourceFactor();
+		if(fireDistance > -1 || lightSourceFactor > 0) {
 			nearFire = true;
 
 			if(closestWarmingFire != null) {
@@ -378,8 +379,8 @@ public class SurvivalistPlugin extends Plugin
 			}
 
 			if (tod == TimeOfDay.NIGHT) {
-				double brightness = 110 - (fireDistance / LIGHT_DISTANCE) * 100;
-				if (tod == TimeOfDay.NIGHT) this.overlay.setOpacity((int) (TimeOfDay.NIGHT.getDarkness() + brightness));
+				double brightness = Math.max(50*lightSourceFactor, 110 - (fireDistance / LIGHT_DISTANCE) * 100);
+				this.overlay.setOpacity((int) (TimeOfDay.NIGHT.getDarkness() + brightness));
 			}
 		}
 		else if(nearFire) {
@@ -522,7 +523,13 @@ public class SurvivalistPlugin extends Plugin
 	}
 
 	private void createNightTimeOverlay() {
-		Widget parent = client.getWidget(548, 26);
+		if(client.isResized()) createNightTimeOverlay(161);
+		else createNightTimeOverlay(548);
+	}
+
+	private void createNightTimeOverlay(int groupID) {
+		int childID = groupID == 161 ? 90 : 26;
+		Widget parent = client.getWidget(groupID, childID);
 		overlay = parent.createChild(WidgetType.RECTANGLE);
 		overlay.setFilled(true);
 		overlay.setOpacity(TimeOfDay.getTimeOfDay(unlockData.getGameTime()).getDarkness());
@@ -539,7 +546,7 @@ public class SurvivalistPlugin extends Plugin
 		Tile[][][] tiles = client.getScene().getTiles();
 		int plane = client.getPlane();
 
-		int closest = hasLightSource() ? 0 : -1;
+		int closest = -1;
 		int closestWarming = (int) WARMTH_DISTANCE+1;
 		nearbyFires.clear();
 		nearbyWarmingFires.clear();
@@ -578,20 +585,25 @@ public class SurvivalistPlugin extends Plugin
 		return closest;
 	}
 
-	private boolean hasLightSource() {
+	private double getLightSourceFactor() {
+		double maxFactor = 0;
 		if (client.getItemContainer(InventoryID.INVENTORY) != null) {
 			for (Item item : client.getItemContainer(InventoryID.INVENTORY).getItems()) {
-				if (VALID_LIGHT_SOURCE.contains(item.getId())) return true;
+				for(LightSource ls : LightSource.values()) {
+					if(ls.itemID == item.getId() && ls.brightnessFactor > maxFactor) maxFactor = ls.brightnessFactor;
+				}
 			}
 		}
 
 		if (client.getItemContainer(InventoryID.EQUIPMENT) != null) {
 			for (Item item : client.getItemContainer(InventoryID.EQUIPMENT).getItems()) {
-				if (VALID_LIGHT_SOURCE.contains(item.getId())) return true;
+				for(LightSource ls : LightSource.values()) {
+					if(ls.itemID == item.getId() && ls.brightnessFactor > maxFactor) maxFactor = ls.brightnessFactor;
+				}
 			}
 		}
 
-		return false;
+		return maxFactor;
 	}
 
 	private void checkWeight() {

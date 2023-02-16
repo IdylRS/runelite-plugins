@@ -13,6 +13,15 @@ public interface SurvivalistConfig extends Config
 			name = "Show Age Boss"
 	)
 	default boolean showAgeBoss() {
+		return false;
+	}
+
+	@ConfigItem(
+			keyName = "showAge",
+			description = "Show the current age in an overlay",
+			name = "Show Age"
+	)
+	default boolean showAgeInfobox() {
 		return true;
 	}
 

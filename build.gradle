@@ -25,7 +25,7 @@ dependencies {
 
 group = 'com.survivalist'
 version = '1.0'
-sourceCompatibility = '1.8'
+sourceCompatibility = '1.9'
 
 tasks.withType(JavaCompile) {
 	options.encoding = 'UTF-8'
