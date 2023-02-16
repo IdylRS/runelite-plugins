@@ -110,13 +110,6 @@ public class SurvivalistPlugin extends Plugin
 			ObjectID.FIRE_45334,  ObjectID.CAMPFIRE_46405, ObjectID.CAMPFIRE_46809
 	);
 
-	private List<Integer> VALID_LIGHT_SOURCE = Arrays.asList(
-		ItemID.LIT_CANDLE, ItemID.LIT_BLACK_CANDLE, ItemID.LIT_TORCH, ItemID.BULLSEYE_LANTERN_4550, ItemID.BRUMA_TORCH,
-		ItemID.OIL_LANTERN_4539, ItemID.CANDLE_LANTERN_4531, ItemID.OIL_LAMP, ItemID.OIL_LAMP_4524,
-		ItemID.SAPPHIRE_LANTERN_4702, ItemID.EMERALD_LANTERN_9065, ItemID.FIREMAKING_CAPE, ItemID.MINING_HELMET_5014,
-		ItemID.FIREMAKING_CAPET
-	);
-
 	@Inject
 	private Client client;
 
@@ -175,6 +168,8 @@ public class SurvivalistPlugin extends Plugin
 	public List<Tile> nearbyWarmingFires = new ArrayList<>();
 	public Tile closestFire;
 	public Tile closestWarmingFire;
+
+	private int lastAteID = -1;
 
 	@Override
 	protected void startUp() throws Exception
@@ -379,7 +374,7 @@ public class SurvivalistPlugin extends Plugin
 			}
 
 			if (tod == TimeOfDay.NIGHT) {
-				double brightness = Math.max(50*lightSourceFactor, 110 - (fireDistance / LIGHT_DISTANCE) * 100);
+				double brightness = Math.max(50*lightSourceFactor, TimeOfDay.DAWN.getDarkness() - (fireDistance / LIGHT_DISTANCE) * TimeOfDay.DAWN.getDarkness());
 				this.overlay.setOpacity((int) (TimeOfDay.NIGHT.getDarkness() + brightness));
 			}
 		}
@@ -480,6 +475,7 @@ public class SurvivalistPlugin extends Plugin
 
 		if(e.getMenuOption().equals("Eat") && unlockData.getStatusEffects().get(StatusEffect.EATING) == 0) {
 			unlockData.addHunger(itemStats.get(e.getItemId()));
+			lastAteID = e.getItemId();
 		}
 		else if(e.getMenuOption().equals("Eat")) {
 			e.consume();
@@ -707,6 +703,8 @@ public class SurvivalistPlugin extends Plugin
 	}
 
 	boolean isItemUnlocked(int itemID) {
+		if(itemID == lastAteID) return false;
+
 		List<String> prefixes = Age.getIllegalItemPrefixes(unlockData.getAge());
 
 		ItemComposition itemComposition = client.getItemDefinition(itemID);
@@ -774,16 +772,6 @@ public class SurvivalistPlugin extends Plugin
 		if(item != null) {
 			item.setActive(false);
 		}
-	}
-
-	private void handleLootbeams() {
-		HashMap<WorldPoint, Lootbeam> beamsToDelete = new HashMap<>(lootbeams);
-		beamsToDelete.keySet().forEach(this::removeLootbeam);
-
-		scrolls.keySet().forEach(point -> {
-			Skill skill = scrolls.get(point).getSkill();
-			this.addLootbeam(point, getLootbeamColor(skill));
-		});
 	}
 
 	private Color getLootbeamColor(Skill skill) {
