@@ -8,12 +8,22 @@ import net.runelite.client.config.ConfigItem;
 public interface ExampleConfig extends Config
 {
 	@ConfigItem(
-		keyName = "greeting",
-		name = "Welcome Greeting",
-		description = "The message to show to the user when they login"
+		keyName = "veganFood",
+		name = "Vegan Food",
+		description = "The food you are allowed to eat as a vegan, comma separated"
 	)
-	default String greeting()
+	default String veganFood()
 	{
-		return "Hello";
+		return "Cabbage";
+	}
+
+	@ConfigItem(
+			keyName = "veganNPCs",
+			name = "Vegan NPCs",
+			description = "The NPCs you are allowed to attack as a vegan, comma separated"
+	)
+	default String veganNPCs()
+	{
+		return "Goblin";
 	}
 }
