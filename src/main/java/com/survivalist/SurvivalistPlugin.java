@@ -30,6 +30,8 @@ import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.*;
 
@@ -171,6 +173,8 @@ public class SurvivalistPlugin extends Plugin
 
 	private int lastAteID = -1;
 
+	private HashMap<WorldPoint, RuneLiteObject> fishingSpots = new HashMap<>();
+
 	@Override
 	protected void startUp() throws Exception
 	{
@@ -196,6 +200,11 @@ public class SurvivalistPlugin extends Plugin
 			infoBoxManager.removeInfoBox(effectInfobox);
 		}
 		statusEffectInfoboxs.clear();
+
+		for(WorldPoint p : fishingSpots.keySet()) {
+			clientThread.invoke(() -> fishingSpots.get(p).setActive(false));
+		}
+		fishingSpots.clear();
 
 		overlayManager.remove(survivalistOverlay);
 		overlayManager.remove(itemOverlay);
@@ -374,7 +383,7 @@ public class SurvivalistPlugin extends Plugin
 			}
 
 			if (tod == TimeOfDay.NIGHT) {
-				double brightness = Math.max(50*lightSourceFactor, TimeOfDay.DAWN.getDarkness() - (fireDistance / LIGHT_DISTANCE) * TimeOfDay.DAWN.getDarkness());
+				double brightness = fireDistance > -1 ? Math.max(50*lightSourceFactor, TimeOfDay.DAWN.getDarkness() - (fireDistance / LIGHT_DISTANCE) * TimeOfDay.DAWN.getDarkness()) : lightSourceFactor*50;
 				this.overlay.setOpacity((int) (TimeOfDay.NIGHT.getDarkness() + brightness));
 			}
 		}
@@ -388,6 +397,27 @@ public class SurvivalistPlugin extends Plugin
 		unlockData.updateHunger();
 		unlockData.updateInjury((double) client.getBoostedSkillLevel(Skill.HITPOINTS) / (double) client.getRealSkillLevel(Skill.HITPOINTS));
 		unlockData.updateLifePoints();
+
+		List<WorldPoint> validPoints = new ArrayList<>();
+
+		for(NPC npc : client.getNpcs()) {
+			if(npc.getName().contains("Fishing spot")) {
+				validPoints.add(npc.getWorldLocation());
+				if(fishingSpots.get(npc.getWorldLocation()) == null) {
+					client.getNpcDefinition(NpcID.FISHING_SPOT_10565);
+					transmogSpot(npc, 41967);
+				}
+				else {
+					clientThread.invokeLater(() -> fishingSpots.get(npc.getWorldLocation()).setActive(true));
+				}
+			}
+		}
+
+		for(WorldPoint p : fishingSpots.keySet()) {
+			if(!validPoints.contains(p)) {
+				clientThread.invokeLater(() -> fishingSpots.get(p).setActive(false));
+			}
+		}
 
 		if(unlockData.getLifePoints() == 0 && !sentGameOver) {
 			clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.CONSOLE, "", "Your life points have hit 0. You have failed to survive. Game over.", ""));
@@ -404,6 +434,14 @@ public class SurvivalistPlugin extends Plugin
 	public void onActorDeath(ActorDeath e) {
 		if(e.getActor().equals(client.getLocalPlayer())) {
 			clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.CONSOLE, "", "You have failed to survive. Game over.", ""));
+		}
+	}
+
+	@Subscribe
+	public void onNpcDespawned(NpcDespawned e) {
+		if(fishingSpots.get(e.getNpc().getWorldLocation()) != null) {
+			fishingSpots.get(e.getNpc().getWorldLocation()).setActive(false);
+			fishingSpots.remove(e.getNpc().getWorldLocation());
 		}
 	}
 
@@ -788,6 +826,52 @@ public class SurvivalistPlugin extends Plugin
 		}
 
 		return value;
+	}
+
+	private void transmogSpot(NPC npc, int modelID) {
+		if(client.getLocalPlayer() == null) return;
+
+		RuneLiteObject disguise = client.createRuneLiteObject();
+
+		LocalPoint loc = LocalPoint.fromWorld(client, npc.getWorldLocation());
+		if (loc == null)
+		{
+			return;
+		}
+
+		Model model = client.loadModel(modelID);
+
+		if (model == null)
+		{
+			final Instant loadTimeOutInstant = Instant.now().plus(Duration.ofSeconds(5));
+
+			clientThread.invoke(() ->
+			{
+				if (Instant.now().isAfter(loadTimeOutInstant))
+				{
+					return true;
+				}
+
+				Model reloadedModel = client.loadModel(modelID);
+
+				if (reloadedModel == null)
+				{
+					return false;
+				}
+
+				return true;
+			});
+		}
+		else {
+			disguise.setModel(model);
+		}
+
+		disguise.setShouldLoop(true);
+		disguise.setAnimation(client.loadAnimation(7634));
+		disguise.setLocation(npc.getLocalLocation(), npc.getWorldLocation().getPlane());
+		disguise.setActive(true);
+
+		fishingSpots.put(npc.getWorldLocation(), disguise);
 	}
 
 	public static int getCenterX(Widget window, int width) {
