@@ -409,6 +409,11 @@ public class SurvivalistPlugin extends Plugin
 		if(e.getActor().equals(client.getLocalPlayer())) {
 			clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.CONSOLE, "", "You have failed to survive. Game over.", ""));
 		}
+		else if(e.getActor() instanceof  NPC && e.getActor().getInteracting().equals(client.getLocalPlayer())) {
+			if(((NPC) e.getActor()).getId() == NpcID.COUNT_DRAYNOR && this.unlockData.getAge().equals(Age.STEEL_AGE)) {
+				this.unlockData.setAge(Age.MITHRIL_AGE);
+			}
+		}
 	}
 
 	@Subscribe

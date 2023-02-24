@@ -42,6 +42,8 @@ public class SurvivalistTileOverlay extends Overlay {
 
     private void drawTile(Graphics2D graphics, Tile tile, Color color, @Nullable String label, Stroke borderStroke)
     {
+        if(plugin.closestFire == null) return;
+
         WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
         WorldPoint point = tile.getWorldLocation();
 
