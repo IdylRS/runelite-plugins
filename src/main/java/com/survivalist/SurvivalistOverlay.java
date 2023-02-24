@@ -32,6 +32,8 @@ public class SurvivalistOverlay extends OverlayPanel {
 
     @Override
     public Dimension render(Graphics2D graphics) {
+        if(!config.showAgeInfobox()) return null;
+
         graphics.setFont(FontManager.getRunescapeFont());
         String age = plugin.getUnlockData() != null ? plugin.getUnlockData().getAge().getName() : "Survivalist";
         String boss = plugin.getUnlockData() != null ? plugin.getAgeBossName() : "???";

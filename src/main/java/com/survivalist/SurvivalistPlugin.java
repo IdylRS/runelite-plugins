@@ -30,6 +30,8 @@ import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.*;
 
@@ -110,13 +112,6 @@ public class SurvivalistPlugin extends Plugin
 			ObjectID.FIRE_45334,  ObjectID.CAMPFIRE_46405, ObjectID.CAMPFIRE_46809
 	);
 
-	private List<Integer> VALID_LIGHT_SOURCE = Arrays.asList(
-		ItemID.LIT_CANDLE, ItemID.LIT_BLACK_CANDLE, ItemID.LIT_TORCH, ItemID.BULLSEYE_LANTERN_4550, ItemID.BRUMA_TORCH,
-		ItemID.OIL_LANTERN_4539, ItemID.CANDLE_LANTERN_4531, ItemID.OIL_LAMP, ItemID.OIL_LAMP_4524,
-		ItemID.SAPPHIRE_LANTERN_4702, ItemID.EMERALD_LANTERN_9065, ItemID.FIREMAKING_CAPE, ItemID.MINING_HELMET_5014,
-		ItemID.FIREMAKING_CAPET
-	);
-
 	@Inject
 	private Client client;
 
@@ -176,6 +171,10 @@ public class SurvivalistPlugin extends Plugin
 	public Tile closestFire;
 	public Tile closestWarmingFire;
 
+	private int lastAteID = -1;
+
+	private HashMap<WorldPoint, RuneLiteObject> fishingSpots = new HashMap<>();
+
 	@Override
 	protected void startUp() throws Exception
 	{
@@ -188,7 +187,7 @@ public class SurvivalistPlugin extends Plugin
 		overlayManager.add(tileOverlay);
 		if(client.getGameState() == GameState.LOGGED_IN) {
 			if(this.overlay != null) this.overlay.setHidden(false);
-			else clientThread.invokeLater(this::createNightTimeOverlay);
+			else clientThread.invokeLater(() -> createNightTimeOverlay());
 			setupPlayerFile();
 		}
 	}
@@ -201,6 +200,11 @@ public class SurvivalistPlugin extends Plugin
 			infoBoxManager.removeInfoBox(effectInfobox);
 		}
 		statusEffectInfoboxs.clear();
+
+		for(WorldPoint p : fishingSpots.keySet()) {
+			clientThread.invoke(() -> fishingSpots.get(p).setActive(false));
+		}
+		fishingSpots.clear();
 
 		overlayManager.remove(survivalistOverlay);
 		overlayManager.remove(itemOverlay);
@@ -285,8 +289,8 @@ public class SurvivalistPlugin extends Plugin
 
 	@Subscribe
 	public void onWidgetLoaded(WidgetLoaded e) {
-		if(e.getGroupId() == 548) {
-			createNightTimeOverlay();
+		if(e.getGroupId() == 548 || e.getGroupId() == 161) {
+			createNightTimeOverlay(e.getGroupId());
 		}
 		// Prayer menu loaded
 		else if(e.getGroupId() == 160 && quickPrayer == null) {
@@ -369,7 +373,8 @@ public class SurvivalistPlugin extends Plugin
 			unlockData.getStatusEffects().put(StatusEffect.COLD, 1);
 		}
 
-		if(fireDistance > -1) {
+		double lightSourceFactor = getLightSourceFactor();
+		if(fireDistance > -1 || lightSourceFactor > 0) {
 			nearFire = true;
 
 			if(closestWarmingFire != null) {
@@ -378,8 +383,8 @@ public class SurvivalistPlugin extends Plugin
 			}
 
 			if (tod == TimeOfDay.NIGHT) {
-				double brightness = 110 - (fireDistance / LIGHT_DISTANCE) * 100;
-				if (tod == TimeOfDay.NIGHT) this.overlay.setOpacity((int) (TimeOfDay.NIGHT.getDarkness() + brightness));
+				double brightness = fireDistance > -1 ? Math.max(50*lightSourceFactor, TimeOfDay.DAWN.getDarkness() - (fireDistance / LIGHT_DISTANCE) * TimeOfDay.DAWN.getDarkness()) : lightSourceFactor*50;
+				this.overlay.setOpacity((int) (TimeOfDay.NIGHT.getDarkness() + brightness));
 			}
 		}
 		else if(nearFire) {
@@ -392,6 +397,27 @@ public class SurvivalistPlugin extends Plugin
 		unlockData.updateHunger();
 		unlockData.updateInjury((double) client.getBoostedSkillLevel(Skill.HITPOINTS) / (double) client.getRealSkillLevel(Skill.HITPOINTS));
 		unlockData.updateLifePoints();
+
+		List<WorldPoint> validPoints = new ArrayList<>();
+
+		for(NPC npc : client.getNpcs()) {
+			if(npc.getName().contains("Fishing spot")) {
+				validPoints.add(npc.getWorldLocation());
+				if(fishingSpots.get(npc.getWorldLocation()) == null) {
+					client.getNpcDefinition(NpcID.FISHING_SPOT_10565);
+					transmogSpot(npc, 41967);
+				}
+				else {
+					clientThread.invokeLater(() -> fishingSpots.get(npc.getWorldLocation()).setActive(true));
+				}
+			}
+		}
+
+		for(WorldPoint p : fishingSpots.keySet()) {
+			if(!validPoints.contains(p)) {
+				clientThread.invokeLater(() -> fishingSpots.get(p).setActive(false));
+			}
+		}
 
 		if(unlockData.getLifePoints() == 0 && !sentGameOver) {
 			clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.CONSOLE, "", "Your life points have hit 0. You have failed to survive. Game over.", ""));
@@ -413,6 +439,14 @@ public class SurvivalistPlugin extends Plugin
 			if(((NPC) e.getActor()).getId() == NpcID.COUNT_DRAYNOR && this.unlockData.getAge().equals(Age.STEEL_AGE)) {
 				this.unlockData.setAge(Age.MITHRIL_AGE);
 			}
+		}
+	}
+
+	@Subscribe
+	public void onNpcDespawned(NpcDespawned e) {
+		if(fishingSpots.get(e.getNpc().getWorldLocation()) != null) {
+			fishingSpots.get(e.getNpc().getWorldLocation()).setActive(false);
+			fishingSpots.remove(e.getNpc().getWorldLocation());
 		}
 	}
 
@@ -484,6 +518,7 @@ public class SurvivalistPlugin extends Plugin
 
 		if(e.getMenuOption().equals("Eat") && unlockData.getStatusEffects().get(StatusEffect.EATING) == 0) {
 			unlockData.addHunger(itemStats.get(e.getItemId()));
+			lastAteID = e.getItemId();
 		}
 		else if(e.getMenuOption().equals("Eat")) {
 			e.consume();
@@ -527,7 +562,13 @@ public class SurvivalistPlugin extends Plugin
 	}
 
 	private void createNightTimeOverlay() {
-		Widget parent = client.getWidget(548, 26);
+		if(client.isResized()) createNightTimeOverlay(161);
+		else createNightTimeOverlay(548);
+	}
+
+	private void createNightTimeOverlay(int groupID) {
+		int childID = groupID == 161 ? 90 : 26;
+		Widget parent = client.getWidget(groupID, childID);
 		overlay = parent.createChild(WidgetType.RECTANGLE);
 		overlay.setFilled(true);
 		overlay.setOpacity(TimeOfDay.getTimeOfDay(unlockData.getGameTime()).getDarkness());
@@ -544,7 +585,7 @@ public class SurvivalistPlugin extends Plugin
 		Tile[][][] tiles = client.getScene().getTiles();
 		int plane = client.getPlane();
 
-		int closest = hasLightSource() ? 0 : -1;
+		int closest = -1;
 		int closestWarming = (int) WARMTH_DISTANCE+1;
 		nearbyFires.clear();
 		nearbyWarmingFires.clear();
@@ -583,20 +624,25 @@ public class SurvivalistPlugin extends Plugin
 		return closest;
 	}
 
-	private boolean hasLightSource() {
+	private double getLightSourceFactor() {
+		double maxFactor = 0;
 		if (client.getItemContainer(InventoryID.INVENTORY) != null) {
 			for (Item item : client.getItemContainer(InventoryID.INVENTORY).getItems()) {
-				if (VALID_LIGHT_SOURCE.contains(item.getId())) return true;
+				for(LightSource ls : LightSource.values()) {
+					if(ls.itemID == item.getId() && ls.brightnessFactor > maxFactor) maxFactor = ls.brightnessFactor;
+				}
 			}
 		}
 
 		if (client.getItemContainer(InventoryID.EQUIPMENT) != null) {
 			for (Item item : client.getItemContainer(InventoryID.EQUIPMENT).getItems()) {
-				if (VALID_LIGHT_SOURCE.contains(item.getId())) return true;
+				for(LightSource ls : LightSource.values()) {
+					if(ls.itemID == item.getId() && ls.brightnessFactor > maxFactor) maxFactor = ls.brightnessFactor;
+				}
 			}
 		}
 
-		return false;
+		return maxFactor;
 	}
 
 	private void checkWeight() {
@@ -700,6 +746,8 @@ public class SurvivalistPlugin extends Plugin
 	}
 
 	boolean isItemUnlocked(int itemID) {
+		if(itemID == lastAteID) return false;
+
 		List<String> prefixes = Age.getIllegalItemPrefixes(unlockData.getAge());
 
 		ItemComposition itemComposition = client.getItemDefinition(itemID);
@@ -769,16 +817,6 @@ public class SurvivalistPlugin extends Plugin
 		}
 	}
 
-	private void handleLootbeams() {
-		HashMap<WorldPoint, Lootbeam> beamsToDelete = new HashMap<>(lootbeams);
-		beamsToDelete.keySet().forEach(this::removeLootbeam);
-
-		scrolls.keySet().forEach(point -> {
-			Skill skill = scrolls.get(point).getSkill();
-			this.addLootbeam(point, getLootbeamColor(skill));
-		});
-	}
-
 	private Color getLootbeamColor(Skill skill) {
 		return skill.equals(Skill.MAGIC) ? Color.CYAN : Color.YELLOW;
 	}
@@ -793,6 +831,52 @@ public class SurvivalistPlugin extends Plugin
 		}
 
 		return value;
+	}
+
+	private void transmogSpot(NPC npc, int modelID) {
+		if(client.getLocalPlayer() == null) return;
+
+		RuneLiteObject disguise = client.createRuneLiteObject();
+
+		LocalPoint loc = LocalPoint.fromWorld(client, npc.getWorldLocation());
+		if (loc == null)
+		{
+			return;
+		}
+
+		Model model = client.loadModel(modelID);
+
+		if (model == null)
+		{
+			final Instant loadTimeOutInstant = Instant.now().plus(Duration.ofSeconds(5));
+
+			clientThread.invoke(() ->
+			{
+				if (Instant.now().isAfter(loadTimeOutInstant))
+				{
+					return true;
+				}
+
+				Model reloadedModel = client.loadModel(modelID);
+
+				if (reloadedModel == null)
+				{
+					return false;
+				}
+
+				return true;
+			});
+		}
+		else {
+			disguise.setModel(model);
+		}
+
+		disguise.setShouldLoop(true);
+		disguise.setAnimation(client.loadAnimation(7634));
+		disguise.setLocation(npc.getLocalLocation(), npc.getWorldLocation().getPlane());
+		disguise.setActive(true);
+
+		fishingSpots.put(npc.getWorldLocation(), disguise);
 	}
 
 	public static int getCenterX(Widget window, int width) {

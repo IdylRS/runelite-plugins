@@ -7,6 +7,7 @@ import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.util.*;
 
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.ItemID;
 import net.runelite.api.Point;
@@ -21,6 +22,7 @@ import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.util.ImageUtil;
 
+@Slf4j
 class LifePointsBarOverlay extends Overlay
 {
     private static final Color LIFE_POINTS_COLOR = new Color(58, 219, 0, 150);
@@ -115,7 +117,8 @@ class LifePointsBarOverlay extends Overlay
 
         width = WIDTH;
         height = BarRenderer.DEFAULT_HEIGHT;
-        offsetLeftBarX = (location.getX() - offsetLeft.getX());
+        Widget container = client.getWidget(curViewport.getViewport().getPackedId());
+        offsetLeftBarX = (location.getX() + (container.getWidth() / 2 - (WIDTH / 2)));
         offsetLeftBarY = (location.getY() - offsetLeft.getY());
 
         int offset = 0;

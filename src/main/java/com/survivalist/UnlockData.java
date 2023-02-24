@@ -59,7 +59,7 @@ public class UnlockData {
     }
 
     public void updateHunger() {
-        if(this.gameTime % 5 == 0) {
+        if(this.gameTime % 7 == 0) {
             if(fullDrainDelay > 0 && hunger == MAX_HUNGER) {
                 fullDrainDelay--;
             }

@@ -32,8 +32,11 @@ import java.awt.Point;
 import java.util.function.Supplier;
 
 import lombok.RequiredArgsConstructor;
+import net.runelite.api.Client;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.overlay.components.TextComponent;
+
+import javax.inject.Inject;
 
 @RequiredArgsConstructor
 class BarRenderer

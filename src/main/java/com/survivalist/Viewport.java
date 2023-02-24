@@ -35,6 +35,8 @@ enum Viewport
 {
     FIXED(WidgetInfo.FIXED_VIEWPORT, WidgetInfo.FIXED_VIEWPORT,
             new Point(-180, -4), new Point(0, 0)),
+    RESIZED_BOX(WidgetInfo.RESIZABLE_VIEWPORT_OLD_SCHOOL_BOX, WidgetInfo.RESIZABLE_VIEWPORT_OLD_SCHOOL_BOX,
+            new Point(-424, -4), new Point(0, 0)),
     FIXED_BANK(WidgetInfo.BANK_CONTAINER, WidgetInfo.BANK_INVENTORY_ITEMS_CONTAINER,
             new Point(20, -4), new Point(0, -4));
 
