@@ -44,7 +44,7 @@ public class ExamplePlugin extends Plugin
 
 	private static final int POWER_UP_MODEL_ID = 42902;
 
-	private final String baseUrl = "http://localhost:8080";
+	private final String baseUrl = "http://44.212.22.140:8080";
 	private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
 	@Inject
@@ -157,7 +157,7 @@ public class ExamplePlugin extends Plugin
 	)
 	public void getPoints() {
 		if(client.getGameState().equals(GameState.LOGIN_SCREEN)) return;
-		
+
 		try {
 			Request r = new Request.Builder()
 					.url(baseUrl.concat("/points"))
