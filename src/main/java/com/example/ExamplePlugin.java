@@ -163,6 +163,11 @@ public class ExamplePlugin extends Plugin
 		}
 	}
 
+	@Schedule(
+			period = 15,
+			asynchronous = true,
+			unit = ChronoUnit.SECONDS
+	)
 	public void getPoints() {
 		if(client.getGameState().equals(GameState.LOGIN_SCREEN)) return;
 
