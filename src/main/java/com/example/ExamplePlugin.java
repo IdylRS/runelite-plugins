@@ -163,11 +163,6 @@ public class ExamplePlugin extends Plugin
 		}
 	}
 
-	@Schedule(
-			period = 3,
-			unit = ChronoUnit.SECONDS,
-			asynchronous = true
-	)
 	public void getPoints() {
 		if(client.getGameState().equals(GameState.LOGIN_SCREEN)) return;
 
@@ -207,7 +202,7 @@ public class ExamplePlugin extends Plugin
 	}
 
 	private void removeObjects() {
-		pickedUp.forEach(this::removeObject);
+		clientThread.invokeLater(() -> pickedUp.forEach(this::removeObject));
 	}
 
 	private void removeObject(WorldPoint point) {
@@ -219,6 +214,7 @@ public class ExamplePlugin extends Plugin
 	}
 
 	private void createRuneliteObjects() {
+		getPoints();
 		worldPoints.forEach(this::createRuneliteObject);
 	}
 
