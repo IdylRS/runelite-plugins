@@ -91,6 +91,16 @@ public class ExamplePlugin extends Plugin
 	@Subscribe
 	public void onGameTick(GameTick e) {
 		WorldPoint location = client.getLocalPlayer().getWorldLocation();
+		Player opponent = null;
+
+		if(config.opponent() != "") {
+			for(Player p : client.getPlayers()) {
+				if(p.getName().equalsIgnoreCase(config.opponent())) {
+					opponent = p;
+					break;
+				}
+			}
+		}
 
 		for(WorldPoint point : powerUps.keySet()) {
 			if(point.distanceTo(location) == 0) {
@@ -98,8 +108,11 @@ public class ExamplePlugin extends Plugin
 				lootbeams.remove(point).remove();
 
 				client.playSoundEffect(SoundEffectID.ITEM_PICKUP);
-
 				updatePoints(point);
+			}
+			else if(opponent != null && point.distanceTo(opponent.getWorldLocation()) == 0) {
+				powerUps.remove(point).setActive(false);
+				lootbeams.remove(point).remove();
 			}
 		}
 	}
@@ -175,8 +188,8 @@ public class ExamplePlugin extends Plugin
 					if(response.isSuccessful()) {
 						try
 						{
-							pickedUp.clear();
-							worldPoints = Arrays.asList(gson.fromJson(response.body().string(), WorldPoint[].class));
+							pickedUp = Arrays.asList(gson.fromJson(response.body().string(), WorldPoint[].class));
+							removeObjects();
 						}
 						catch (IOException | JsonSyntaxException e)
 						{
@@ -191,6 +204,10 @@ public class ExamplePlugin extends Plugin
 		catch(IllegalArgumentException e) {
 			log.error("Bad URL given: " + e.getLocalizedMessage());
 		}
+	}
+
+	private void removeObjects() {
+		pickedUp.forEach(this::removeObject);
 	}
 
 	private void removeObject(WorldPoint point) {
@@ -211,6 +228,7 @@ public class ExamplePlugin extends Plugin
 		LocalPoint loc = LocalPoint.fromWorld(client, point);
 		if (loc == null || pickedUp.contains(point))
 		{
+			log.info("here");
 			removeObject(point);
 			return;
 		}
@@ -246,7 +264,7 @@ public class ExamplePlugin extends Plugin
 
 		object.setLocation(loc, point.getPlane());
 		object.setActive(true);
-
+		log.info("Created @"+point);
 		powerUps.put(point, object);
 		addLootbeam(point);
 	}
