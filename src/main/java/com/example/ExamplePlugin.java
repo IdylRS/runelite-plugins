@@ -3,10 +3,9 @@ package com.example;
 import com.google.inject.Provides;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatMessageType;
-import net.runelite.api.Client;
-import net.runelite.api.GameState;
+import net.runelite.api.*;
 import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
@@ -43,6 +42,22 @@ public class ExamplePlugin extends Plugin
 		{
 			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Example says " + config.greeting(), null);
 		}
+	}
+
+	@Subscribe
+	public void onMenuEntryAdded(MenuEntryAdded e) {
+		if(e.getType() == MenuAction.EXAMINE_NPC.getId() && e.getMenuEntry().getNpc() != null && e.getMenuEntry().getNpc().getId() == NpcID.COW_CALF) {
+			client.createMenuEntry(-1)
+					.setTarget(e.getTarget())
+					.setIdentifier(e.getMenuEntry().getNpc().getId())
+					.setType(MenuAction.RUNELITE)
+					.setOption("Tame")
+					.onClick(this::tameAnimal)
+		}
+	}
+
+	private void tameAnimal(MenuEntry e) {
+		log.info(e.getNpc());
 	}
 
 	@Provides
