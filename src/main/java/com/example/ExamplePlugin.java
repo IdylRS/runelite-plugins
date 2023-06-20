@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
+import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -27,13 +28,20 @@ public class ExamplePlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
-		log.info("Example started!");
+		
 	}
 
 	@Override
 	protected void shutDown() throws Exception
 	{
 		log.info("Example stopped!");
+	}
+
+	@Subscribe
+	public void onChatMessage(ChatMessage e) {
+		if(e.getType().equals(ChatMessageType.PUBLICCHAT)) {
+
+		}
 	}
 
 	@Subscribe
