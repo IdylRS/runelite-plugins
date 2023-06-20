@@ -35,8 +35,13 @@ public class Owoify {
 
     public static String convert(String text) {
         String[] words = text.split(" ");
-
         String result = "";
+
+        double roll = Math.floor(Math.random()*5);
+
+        if(roll == 0) {
+            result += prefixes.get((int) Math.floor(Math.random() * prefixes.size()));
+        }
 
         for(String w : words) {
             if(wordMap.get(w) != null) {
