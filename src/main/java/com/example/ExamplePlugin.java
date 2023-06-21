@@ -1,5 +1,6 @@
 package com.example;
 
+import com.example.ui.UIButton;
 import com.google.inject.Provides;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
@@ -15,12 +16,17 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 
 import java.awt.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
+import javax.sound.midi.*;
 
 @Slf4j
 @PluginDescriptor(
-	name = "Example"
+	name = "Bad Stuff"
 )
 public class ExamplePlugin extends Plugin
 {
@@ -36,13 +42,28 @@ public class ExamplePlugin extends Plugin
 	private List<Integer> dogs = Arrays.asList(111, 112, 113, 114, 131, 2802, 2902, 2922, 2829, 2820, 4228, 6473, 6474, 7025, 7209, 7771, 8041, 10439, 10675, 10760);
 	private List<Integer> cats = Arrays.asList(3498, 5591, 5592, 5593, 5594, 5595, 5596, 5597, 4780, 395, 1619, 1620, 1621, 1622, 1623, 1624, 3831, 3832, 6662, 6663, 6664, 6665, 6666, 6667, 7380, 8594, 2474, 2475, 2476, 4455, 540, 541, 2782, 6661, 2346, 1010, 3497, 1625, 6668, 1626, 1627, 1628, 1629, 1630, 1631, 6683, 6684, 6685, 6686, 6687, 6688, 1632, 6689, 2644, 4229, 5598, 5599, 5600);
 
+	private int[] allStar = {73, 70, 68, 66, 70, 71, 70, 68, 66, 63, 61};
+
 	private int allergyCD = 15;
 	private int allergyCDTimer = 0;
+
+	private int seqNum = 0;
+
+	SoundEngine engine;
+	Synthesizer synth;
+	MidiChannel[] mChannels;
 
 	@Override
 	protected void startUp() throws Exception
 	{
-		Owoify.Setup();
+		engine = new SoundEngine();
+		synth = MidiSystem.getSynthesizer();
+		synth.open();
+
+		Instrument[] instr = synth.getDefaultSoundbank().getInstruments();
+		mChannels = synth.getChannels();
+
+		synth.loadInstrument(instr[6]);//load an instrument
 	}
 
 	@Override
@@ -52,6 +73,19 @@ public class ExamplePlugin extends Plugin
 
 	@Subscribe
 	public void onGameTick(GameTick e) {
+		if(client.getGameState().equals(GameState.LOGGED_IN) && config.metroStar()) {
+			mChannels[0].noteOn(allStar[seqNum%allStar.length], 127);
+			seqNum++;
+		}
+
+		if(config.badMetronome()) {
+			int roll = (int) Math.floor(Math.random()*2);
+
+			if(roll == 0) {
+				client.playSoundEffect(SoundEffectID.GE_INCREMENT_PLOP, 100);
+			}
+		}
+
 		if(allergyCDTimer > 0) allergyCDTimer--;
 
 		if(config.allergyWomen() && allergyCDTimer == 0) {
@@ -98,13 +132,21 @@ public class ExamplePlugin extends Plugin
 				widget.setText(text);
 			});
 		}
-		else if(e.getGroupId() == WidgetInfo.CHATBOX_MESSAGES.getGroupId()) {
-			Widget parent = client.getWidget(WidgetInfo.CHATBOX_MESSAGES.getGroupId()).createChild(0);
-			Widget child1 = parent.createChild(4);
-			child1.setText("I hate that task wtf??");
-			child1.setAction(0, "hover");
-			child1.setTextColor(Color.BLACK.getRGB());
-		}
+//		else if(e.getGroupId() == WidgetInfo.CHATBOX_MESSAGES.getGroupId()) {
+//			Widget parent = client.getWidget(WidgetInfo.CHATBOX_MESSAGES.getPackedId()).createChild(0);
+//			Widget child1 = parent.createChild(4);
+//			UIButton btn = new UIButton(child1);
+//			child1.setText("I hate that task wtf??");
+//			child1.setTextColor(Color.BLACK.getRGB());
+//
+//			btn.setOnHoverListener((listener) -> {
+//				child1.setTextColor(Color.white.getRGB());
+//			});
+//
+//			btn.setLeaveListener((listener) -> {
+//				child1.setTextColor(Color.black.getRGB());
+//			});
+//		}
 	}
 
 	@Subscribe

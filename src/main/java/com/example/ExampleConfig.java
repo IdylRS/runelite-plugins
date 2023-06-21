@@ -17,13 +17,23 @@ public interface ExampleConfig extends Config
 	String allergies = "allergies";
 
 	@ConfigItem(
-		keyName = "greeting",
-		name = "Welcome Greeting",
+		keyName = "metroStar",
+		name = "MetroStar",
 		description = "The message to show to the user when they login"
 	)
-	default String greeting()
+	default boolean metroStar()
 	{
-		return "Hello";
+		return false;
+	}
+
+	@ConfigItem(
+			keyName = "badMetronome",
+			name = "Bad Metronome",
+			description = "The message to show to the user when they login"
+	)
+	default boolean badMetronome()
+	{
+		return false;
 	}
 
 	@ConfigItem(
