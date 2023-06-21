@@ -17,6 +17,26 @@ public interface ExampleConfig extends Config
 	String allergies = "allergies";
 
 	@ConfigItem(
+			keyName = "owoify",
+			name = "Owoify",
+			description = "The message to show to the user when they login"
+	)
+	default boolean owoify()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+			keyName = "idylHurt",
+			name = "Idyl Hurt Noises",
+			description = "The message to show to the user when they login"
+	)
+	default boolean idylHurt()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = "metroStar",
 		name = "MetroStar",
 		description = "The message to show to the user when they login"
