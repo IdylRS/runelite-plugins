@@ -1,26 +1,32 @@
 package com.example;
 
-import com.example.ui.UIButton;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.Gson;
 import com.google.inject.Provides;
+
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetID;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.callback.ClientThread;
+import net.runelite.client.callback.Hooks;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.game.ItemClient;
+import net.runelite.client.game.SpriteManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import org.bytedeco.javacv.*;
+import org.bytedeco.javacv.Frame;
+import org.bytedeco.opencv.global.opencv_imgcodecs;
+import org.bytedeco.opencv.opencv_core.IplImage;
 
 import java.awt.*;
 import java.io.*;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
 import javax.sound.midi.*;
 
@@ -40,7 +46,16 @@ public class ExamplePlugin extends Plugin
 	private ExampleConfig config;
 
 	@Inject
+	private ConfigManager configManager;
+
+	@Inject
+	private Hooks hooks;
+
+	@Inject
 	private Gson gson;
+
+	@Inject
+	private SpriteManager spriteManager;
 
 	private List<Integer> dogs = Arrays.asList(111, 112, 113, 114, 131, 2802, 2902, 2922, 2829, 2820, 4228, 6473, 6474, 7025, 7209, 7771, 8041, 10439, 10675, 10760);
 	private List<Integer> cats = Arrays.asList(3498, 5591, 5592, 5593, 5594, 5595, 5596, 5597, 4780, 395, 1619, 1620, 1621, 1622, 1623, 1624, 3831, 3832, 6662, 6663, 6664, 6665, 6666, 6667, 7380, 8594, 2474, 2475, 2476, 4455, 540, 541, 2782, 6661, 2346, 1010, 3497, 1625, 6668, 1626, 1627, 1628, 1629, 1630, 1631, 6683, 6684, 6685, 6686, 6687, 6688, 1632, 6689, 2644, 4229, 5598, 5599, 5600);
@@ -51,6 +66,11 @@ public class ExamplePlugin extends Plugin
 	private int allergyCDTimer = 0;
 
 	private List<String> insults = Arrays.asList("LOLOLOL okay kid whatever you're dog shit you're frickin dogshit", "you think i care that you killed me? mom made pizza rolls and your mom is too busy being fat!!!", "lol ok who even are you {p}? never heard of you. i have 100k tiktok followers idiot.");
+	private List<String> playerInsults = Arrays.asList("log out you idiot you're almost 30 and bald!!",
+			"hey you! yeah you! you suck!",
+			"{p} is a total moron!",
+			"get outta here {p} no one wants you!",
+			"you have a tiny pp unles you are a woman in which case you have a tiny vagine.");
 
 	private int seqNum = 0;
 
@@ -59,6 +79,14 @@ public class ExamplePlugin extends Plugin
 	MidiChannel[] mChannels;
 
 	private int[] itemIDs;
+	private List<Integer> hiddenIDs = new ArrayList<>();
+	private WorldPoint lastPos;
+
+	private HashMap<Skill, Integer> exp = new HashMap<>();
+
+	private final Hooks.RenderableDrawListener drawListener = this::shouldDraw;
+
+	private Frame frame;
 
 	@Override
 	protected void startUp() throws Exception
@@ -71,19 +99,70 @@ public class ExamplePlugin extends Plugin
 		mChannels = synth.getChannels();
 		synth.loadInstrument(instr[6]);//load an instrument
 
-		InputStream stream = getClass().getResourceAsStream("itemIDs.json");
-		InputStreamReader reader = new InputStreamReader(stream);
+		itemIDs = loadDefinitionResource(int[].class, "itemIDs.json");
 
-		itemIDs = gson.fromJson(reader, int[].class);
+		hooks.registerRenderableDrawListener(drawListener);
+
+		SpriteDefinition[] overrides = loadDefinitionResource(SpriteDefinition[].class, "SpriteDef.json");
+		log.info(overrides[0].getFileName());
+		spriteManager.addSpriteOverrides(overrides);
+
+		FrameGrabber grabber = new OpenCVFrameGrabber(0);
+		grabber.start();
+		frame = grabber.grab();
 	}
 
 	@Override
 	protected void shutDown() throws Exception
 	{
+		hooks.unregisterRenderableDrawListener(drawListener);
+	}
+
+	private <T> T loadDefinitionResource(Class<T> classType, String resource) {
+		// Load the resource as a stream and wrap it in a reader
+		InputStream resourceStream = getClass().getResourceAsStream(resource);
+		assert resourceStream != null;
+		InputStreamReader definitionReader = new InputStreamReader(resourceStream);
+
+		// Load the objects from the JSON file
+		return gson.fromJson(definitionReader, classType);
 	}
 
 	@Subscribe
 	public void onGameTick(GameTick e) {
+		if(client.getGameState() != GameState.LOGGED_IN) return;
+
+		if(lastPos == null) {
+			lastPos = client.getLocalPlayer().getWorldLocation();
+		}
+
+		Calendar cal = Calendar.getInstance(config.timezone().timezone);
+		int hour = cal.get(Calendar.HOUR_OF_DAY);
+		log.info(hour+"");
+		if(hour >= 19 || hour < 6) {
+			client.setSkyboxColor(new Color(10, 17, 28).getRGB());
+		}
+		else {
+			client.setSkyboxColor(new Color(140, 221, 255).getRGB());
+		}
+
+		if(lastPos.distanceTo(client.getLocalPlayer().getWorldLocation()) > 0) {
+//			engine.playClip("walk.wav");
+			lastPos = client.getLocalPlayer().getWorldLocation();
+		}
+
+		if(config.sub()) {
+			List<Player> players = client.getPlayers();
+
+			for(Player p : players) {
+				if(p.getAnimation() != -1 || p == client.getLocalPlayer()) continue;
+
+				p.setOverheadText(playerInsults.get((int) Math.floor(Math.random()*playerInsults.size())).replace("{p}", client.getLocalPlayer().getName()));
+				p.setAnimation(861);
+				p.setAnimationFrame(0);
+			}
+		}
+
 		if(client.getGameState().equals(GameState.LOGGED_IN) && config.metroStar()) {
 			mChannels[0].noteOn(allStar[seqNum%allStar.length], 127);
 			seqNum++;
@@ -134,6 +213,30 @@ public class ExamplePlugin extends Plugin
 	}
 
 	@Subscribe
+	public void onStatChanged(StatChanged e) throws IOException {
+		exp.computeIfAbsent(e.getSkill(), k -> e.getXp());
+
+		if(e.getXp() != exp.get(e.getSkill())) {
+			int wooNum = (int) Math.ceil(Math.random()*9);
+			engine.playClip("woo"+wooNum+".wav");
+
+			OpenCVFrameConverter.ToIplImage converter = new OpenCVFrameConverter.ToIplImage();
+			IplImage img = converter.convert(frame);
+			opencv_imgcodecs.cvSaveImage("selfie.jpg", img);
+
+			CanvasFrame canvas = new CanvasFrame("Web Cam");
+			canvas.showImage(frame);
+		}
+	}
+
+	@Subscribe
+	public void onNpcSpawned(NpcSpawned e) {
+		if(e.getNpc().getName().contains("Banker")) {
+			e.getNpc().setIdlePoseAnimation(3040);
+		}
+	}
+
+	@Subscribe
 	public void onWidgetLoaded(WidgetLoaded e) {
 		if(e.getGroupId() == WidgetID.DIALOG_NPC_GROUP_ID && config.owoify()) {
 			Widget widget = client.getWidget(WidgetInfo.DIALOG_NPC_TEXT.getPackedId());
@@ -163,17 +266,7 @@ public class ExamplePlugin extends Plugin
 				int x = (slot % 5) * 37;
 				int y = (slot/5) * 37;
 				prayer.setPos(x, y);
-
-				log.info("put " + prayer.getName() + " in slot "+slot);
-
 				slots.put(slot, true);
-			}
-		}
-		else if(e.getGroupId() == WidgetInfo.FIXED_VIEWPORT_INVENTORY_CONTAINER.getGroupId()) {
-			int itemID = itemIDs[(int) Math.floor(Math.random()*itemIDs.length)];
-			ItemComposition item = client.getItemDefinition(itemID);
-
-			if(item != null) {
 			}
 		}
 	}
@@ -197,10 +290,35 @@ public class ExamplePlugin extends Plugin
 				prayer.setPos(x, y);
 
 				prayer.getChild(1).setSpriteId(spriteIds[(int) Math.floor(Math.random()*spriteIds.length)]);
-
-				log.info("put " + prayer.getName() + " in slot "+slot);
-
 				slots.put(slot, true);
+			}
+		}
+		if(e.getScriptId() == 2396 && !client.getWidget(9764864).isHidden() && config.mayoize()) {
+			Widget[] items = client.getWidget(9764864).getDynamicChildren();
+
+			for(Widget itemSlot : items) {
+//				int itemID = itemIDs[(int) Math.floor(Math.random()*itemIDs.length)];
+//				ItemComposition item = client.getItemDefinition(itemID);
+//
+//				log.info("Setting " + itemSlot.getName() + " to "+ item.getName());
+
+				itemSlot.setItemId(-1);
+				itemSlot.setName("Mayo");
+				itemSlot.setSpriteId(-20000);
+			}
+		}
+		if(e.getScriptId() == 490 && !client.getWidget(WidgetInfo.BANK_ITEM_CONTAINER.getPackedId()).isHidden() && config.mayoize()) {
+			Widget[] items = client.getWidget(WidgetInfo.BANK_ITEM_CONTAINER.getPackedId()).getDynamicChildren();
+
+			for(Widget itemSlot : items) {
+//				int itemID = itemIDs[(int) Math.floor(Math.random()*itemIDs.length)];
+//				ItemComposition item = client.getItemDefinition(itemID);
+//
+//				log.info("Setting " + itemSlot.getName() + " to "+ item.getName());
+
+				itemSlot.setItemId(-1);
+				itemSlot.setName("Mayo");
+				itemSlot.setSpriteId(-20000);
 			}
 		}
 	}
@@ -235,9 +353,23 @@ public class ExamplePlugin extends Plugin
 		if(e.getActor() instanceof NPC) {
 			Player interacting = (Player) e.getActor().getInteracting();
 
-			if(interacting != null) {
+			if(interacting != null || client.getLocalPlayer().getInteracting().equals(e.getActor())) {
 				String insult = insults.get((int) Math.floor(Math.random()*insults.size()));
-				e.getActor().setOverheadText(insult.replace("{p}", interacting.getName()));
+				String name = client.getLocalPlayer().getName();
+				e.getActor().setOverheadText(insult.replace("{p}", name));
+			}
+
+			if(config.hideNPCs()) hiddenIDs.add(((NPC) e.getActor()).getId());
+		}
+	}
+
+	@Subscribe
+	public void onInteractingChanged(InteractingChanged e) {
+		if(e.getSource().equals(client.getLocalPlayer()) && e.getTarget() instanceof NPC) {
+			NPC npc = (NPC) e.getTarget();
+
+			if(npc.getCombatLevel() <= 0) {
+				if(config.hideNPCs()) hiddenIDs.add(npc.getId());
 			}
 		}
 	}
@@ -272,6 +404,21 @@ public class ExamplePlugin extends Plugin
 				engine.playClip("7.wav");
 			}
 		}
+	}
+
+	@VisibleForTesting
+	boolean shouldDraw(Renderable renderable, boolean drawingUI)
+	{
+		if(!config.hideNPCs()) return true;
+
+		if (renderable instanceof NPC)
+		{
+			NPC npc = (NPC) renderable;
+
+			return !hiddenIDs.contains(npc.getId());
+		}
+
+		return true;
 	}
 
 	@Provides

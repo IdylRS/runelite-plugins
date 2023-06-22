@@ -18,9 +18,12 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok:1.18.20'
 	annotationProcessor 'org.projectlombok:lombok:1.18.20'
 
+	compileOnly group: 'org.bytedeco', name: 'javacv-platform', version: '1.5.5'
+
 	testImplementation 'junit:junit:4.12'
 	testImplementation group: 'net.runelite', name:'client', version: runeLiteVersion
 	testImplementation group: 'net.runelite', name:'jshell', version: runeLiteVersion
+	testImplementation group: 'org.bytedeco', name: 'javacv-platform', version: '1.5.5'
 }
 
 group = 'com.example'

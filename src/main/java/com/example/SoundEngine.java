@@ -7,6 +7,7 @@ import javax.sound.sampled.*;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 
 @Singleton
 @Slf4j
@@ -16,6 +17,8 @@ public class SoundEngine {
 
     private long lastClipMTime = CLIP_MTIME_UNLOADED;
     private Clip clip = null;
+
+    private HashMap<String, AudioInputStream> clips = new HashMap<>();
 
     private boolean loadClip(String sound) {
         try (InputStream stream = new BufferedInputStream(SoundFileManager.getSoundStream(sound))) {
