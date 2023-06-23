@@ -19,6 +19,9 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.SpriteManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.bytedeco.javacv.*;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.opencv.global.opencv_imgcodecs;
@@ -26,8 +29,12 @@ import org.bytedeco.opencv.opencv_core.IplImage;
 
 import java.awt.*;
 import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.*;
 import java.util.List;
+import java.util.regex.Pattern;
 import javax.sound.midi.*;
 
 @Slf4j
@@ -56,6 +63,8 @@ public class ExamplePlugin extends Plugin
 
 	@Inject
 	private SpriteManager spriteManager;
+
+	private static final Pattern COLLECTION_LOG_ITEM_REGEX = Pattern.compile("New item added to your collection log:.*");
 
 	private List<Integer> dogs = Arrays.asList(111, 112, 113, 114, 131, 2802, 2902, 2922, 2829, 2820, 4228, 6473, 6474, 7025, 7209, 7771, 8041, 10439, 10675, 10760);
 	private List<Integer> cats = Arrays.asList(3498, 5591, 5592, 5593, 5594, 5595, 5596, 5597, 4780, 395, 1619, 1620, 1621, 1622, 1623, 1624, 3831, 3832, 6662, 6663, 6664, 6665, 6666, 6667, 7380, 8594, 2474, 2475, 2476, 4455, 540, 541, 2782, 6661, 2346, 1010, 3497, 1625, 6668, 1626, 1627, 1628, 1629, 1630, 1631, 6683, 6684, 6685, 6686, 6687, 6688, 1632, 6689, 2644, 4229, 5598, 5599, 5600);
@@ -86,7 +95,8 @@ public class ExamplePlugin extends Plugin
 
 	private final Hooks.RenderableDrawListener drawListener = this::shouldDraw;
 
-	private Frame frame;
+	@Inject
+	private OkHttpClient httpClient;
 
 	@Override
 	protected void startUp() throws Exception
@@ -106,10 +116,6 @@ public class ExamplePlugin extends Plugin
 		SpriteDefinition[] overrides = loadDefinitionResource(SpriteDefinition[].class, "SpriteDef.json");
 		log.info(overrides[0].getFileName());
 		spriteManager.addSpriteOverrides(overrides);
-
-		FrameGrabber grabber = new OpenCVFrameGrabber(0);
-		grabber.start();
-		frame = grabber.grab();
 	}
 
 	@Override
@@ -219,13 +225,6 @@ public class ExamplePlugin extends Plugin
 		if(e.getXp() != exp.get(e.getSkill())) {
 			int wooNum = (int) Math.ceil(Math.random()*9);
 			engine.playClip("woo"+wooNum+".wav");
-
-			OpenCVFrameConverter.ToIplImage converter = new OpenCVFrameConverter.ToIplImage();
-			IplImage img = converter.convert(frame);
-			opencv_imgcodecs.cvSaveImage("selfie.jpg", img);
-
-			CanvasFrame canvas = new CanvasFrame("Web Cam");
-			canvas.showImage(frame);
 		}
 	}
 
@@ -311,6 +310,7 @@ public class ExamplePlugin extends Plugin
 			Widget[] items = client.getWidget(WidgetInfo.BANK_ITEM_CONTAINER.getPackedId()).getDynamicChildren();
 
 			for(Widget itemSlot : items) {
+				//Randomize code commented out
 //				int itemID = itemIDs[(int) Math.floor(Math.random()*itemIDs.length)];
 //				ItemComposition item = client.getItemDefinition(itemID);
 //
@@ -324,12 +324,18 @@ public class ExamplePlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onChatMessage(ChatMessage e) {
+	public void onChatMessage(ChatMessage e) throws IOException {
 		if(e.getType().equals(ChatMessageType.DIALOG)) {
 			return;
 		}
-		else {
+		else if(config.owoify()){
 			e.getMessageNode().setValue(Owoify.convert(e.getMessage()));
+		}
+
+		if(config.snapshot()) {
+			if(COLLECTION_LOG_ITEM_REGEX.matcher(e.getMessage()).matches()) {
+				sendReq();
+			}
 		}
 	}
 
@@ -419,6 +425,12 @@ public class ExamplePlugin extends Plugin
 		}
 
 		return true;
+	}
+
+	private void sendReq() throws IOException {
+		URL url = new URL("http://localhost:8080");
+		Request req = new Request.Builder().url(url).build();
+		Response res = httpClient.newCall(req).execute();
 	}
 
 	@Provides

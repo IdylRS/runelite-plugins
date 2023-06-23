@@ -6,7 +6,16 @@ serverPort = 8080
 
 class MyServer(BaseHTTPRequestHandler):
     def do_GET(self):
-        print("ah shit fuck")
+        cam_port = 0
+        cam = cv2.VideoCapture(cam_port)
+
+        result, image = cam.read()
+        if result:
+            cv2.imwrite("collection-log.png", image)
+
+        # If captured image is corrupted, moving to else part
+        else:
+            print("No image detected. Please! try again")
         
 
 if __name__ == "__main__":        

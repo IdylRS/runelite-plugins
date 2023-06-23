@@ -22,6 +22,13 @@ public interface ExampleConfig extends Config
 	String allergies = "allergies";
 
 	@ConfigItem(
+			keyName = "snapshot",
+			name = "Collection Log Snapshot",
+			description = "takes a picture of your face when you get a log slot"
+	)
+	default boolean snapshot() { return false; }
+
+	@ConfigItem(
 			keyName = "hideNPCs",
 			name = "Hide NPCs",
 			description = "npcs to hide"
