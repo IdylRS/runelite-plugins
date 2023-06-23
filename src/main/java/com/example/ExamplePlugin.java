@@ -5,6 +5,8 @@ import com.google.gson.Gson;
 import com.google.inject.Provides;
 
 import javax.inject.Inject;
+
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
@@ -19,6 +21,7 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.SpriteManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.ui.overlay.OverlayManager;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -62,6 +65,9 @@ public class ExamplePlugin extends Plugin
 	private Gson gson;
 
 	@Inject
+	private OverlayManager overlayManager;
+
+	@Inject
 	private SpriteManager spriteManager;
 
 	private static final Pattern COLLECTION_LOG_ITEM_REGEX = Pattern.compile("New item added to your collection log:.*");
@@ -95,6 +101,16 @@ public class ExamplePlugin extends Plugin
 
 	private final Hooks.RenderableDrawListener drawListener = this::shouldDraw;
 
+	private int ticksTilLogout = -1;
+	private int ticksTilDisease = 0;
+
+	private MenuEntry lastAction;
+
+	private FunBarOverlay funBarOverlay;
+
+	@Getter
+	private int fun = 100;
+
 	@Inject
 	private OkHttpClient httpClient;
 
@@ -114,8 +130,10 @@ public class ExamplePlugin extends Plugin
 		hooks.registerRenderableDrawListener(drawListener);
 
 		SpriteDefinition[] overrides = loadDefinitionResource(SpriteDefinition[].class, "SpriteDef.json");
-		log.info(overrides[0].getFileName());
 		spriteManager.addSpriteOverrides(overrides);
+
+		funBarOverlay = new FunBarOverlay(client, this, spriteManager);
+		overlayManager.add(funBarOverlay);
 	}
 
 	@Override
@@ -138,13 +156,31 @@ public class ExamplePlugin extends Plugin
 	public void onGameTick(GameTick e) {
 		if(client.getGameState() != GameState.LOGGED_IN) return;
 
+		if(ticksTilLogout < 0) {
+			ticksTilLogout = config.logoutTicks();
+		}
+		else if(ticksTilLogout == 0 && config.logoutTicks() > 0) {
+			client.setGameState(GameState.LOGIN_SCREEN);
+		}
+
+		if(config.statistics() && ticksTilDisease % 100 == 0) {
+			int num = (int) Math.floor(Math.random()*5)+13;
+			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "In the last 5 minutes, about "+num+" have died of tuberculosis. Thanks for playing Runescape!", "");
+		}
+
+		if(ticksTilDisease % 5 == 0) {
+			fun = Math.max(0, fun-1);
+		}
+
+		ticksTilLogout--;
+		ticksTilDisease++;
+
 		if(lastPos == null) {
 			lastPos = client.getLocalPlayer().getWorldLocation();
 		}
 
 		Calendar cal = Calendar.getInstance(config.timezone().timezone);
 		int hour = cal.get(Calendar.HOUR_OF_DAY);
-		log.info(hour+"");
 		if(hour >= 19 || hour < 6) {
 			client.setSkyboxColor(new Color(10, 17, 28).getRGB());
 		}
@@ -225,6 +261,7 @@ public class ExamplePlugin extends Plugin
 		if(e.getXp() != exp.get(e.getSkill())) {
 			int wooNum = (int) Math.ceil(Math.random()*9);
 			engine.playClip("woo"+wooNum+".wav");
+			ticksTilLogout = config.logoutTicks();
 		}
 	}
 
@@ -298,8 +335,6 @@ public class ExamplePlugin extends Plugin
 			for(Widget itemSlot : items) {
 //				int itemID = itemIDs[(int) Math.floor(Math.random()*itemIDs.length)];
 //				ItemComposition item = client.getItemDefinition(itemID);
-//
-//				log.info("Setting " + itemSlot.getName() + " to "+ item.getName());
 
 				itemSlot.setItemId(-1);
 				itemSlot.setName("Mayo");
@@ -313,13 +348,25 @@ public class ExamplePlugin extends Plugin
 				//Randomize code commented out
 //				int itemID = itemIDs[(int) Math.floor(Math.random()*itemIDs.length)];
 //				ItemComposition item = client.getItemDefinition(itemID);
-//
-//				log.info("Setting " + itemSlot.getName() + " to "+ item.getName());
 
 				itemSlot.setItemId(-1);
 				itemSlot.setName("Mayo");
 				itemSlot.setSpriteId(-20000);
 			}
+		}
+	}
+
+	@Subscribe
+	public void onMenuOptionClicked(MenuOptionClicked e) {
+		ticksTilLogout = config.logoutTicks();
+
+		if(lastAction == null || lastAction.getIdentifier() != e.getMenuEntry().getIdentifier()) {
+			e.consume();
+			lastAction = e.getMenuEntry();
+			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Oops! Looks like you want to " + e.getMenuOption() + "! Do it again to confirm.", "");
+		}
+		else {
+			lastAction = null;
 		}
 	}
 

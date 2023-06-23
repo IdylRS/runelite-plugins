@@ -29,11 +29,25 @@ public interface ExampleConfig extends Config
 	default boolean snapshot() { return false; }
 
 	@ConfigItem(
+			keyName = "statistics",
+			name = "Disease Stats",
+			description = "cool disease stats every 5 minutes"
+	)
+	default boolean statistics() { return false; }
+
+	@ConfigItem(
 			keyName = "hideNPCs",
 			name = "Hide NPCs",
 			description = "npcs to hide"
 	)
 	default boolean hideNPCs() { return false; }
+
+	@ConfigItem(
+			keyName = "logoutTicks",
+			name = "Logout Ticks",
+			description = "Ticks until you are logout for inactivity"
+	)
+	default int logoutTicks() { return 5; }
 
 	@ConfigItem(
 			keyName = "timezone",
