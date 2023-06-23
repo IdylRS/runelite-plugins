@@ -55,7 +55,7 @@ class FunBarOverlay extends Overlay
     private void initRenderers()
     {
         barRenderers.add(new BarRenderer(
-                () -> MAX_LIFE_POINTS_VALUE,
+                () -> 100,
                 () -> plugin.getFun(),
                 () -> 0,
                 () -> LIFE_POINTS_COLOR,
