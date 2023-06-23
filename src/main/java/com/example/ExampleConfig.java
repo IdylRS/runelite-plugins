@@ -36,6 +36,13 @@ public interface ExampleConfig extends Config
 	default boolean statistics() { return false; }
 
 	@ConfigItem(
+			keyName = "confirm",
+			name = "Confirm Actions",
+			description = "Confirm Actions"
+	)
+	default boolean confirm() { return false; }
+
+	@ConfigItem(
 			keyName = "hideNPCs",
 			name = "Hide NPCs",
 			description = "npcs to hide"

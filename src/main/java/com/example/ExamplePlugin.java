@@ -9,6 +9,7 @@ import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.api.widgets.Widget;
@@ -25,16 +26,12 @@ import net.runelite.client.ui.overlay.OverlayManager;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.bytedeco.javacv.*;
-import org.bytedeco.javacv.Frame;
-import org.bytedeco.opencv.global.opencv_imgcodecs;
-import org.bytedeco.opencv.opencv_core.IplImage;
 
 import java.awt.*;
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -102,7 +99,7 @@ public class ExamplePlugin extends Plugin
 	private final Hooks.RenderableDrawListener drawListener = this::shouldDraw;
 
 	private int ticksTilLogout = -1;
-	private int ticksTilDisease = 0;
+	private int ticks = 0;
 
 	private MenuEntry lastAction;
 
@@ -163,17 +160,21 @@ public class ExamplePlugin extends Plugin
 			client.setGameState(GameState.LOGIN_SCREEN);
 		}
 
-		if(config.statistics() && ticksTilDisease % 100 == 0) {
+		if(config.statistics() && ticks % 100 == 0) {
 			int num = (int) Math.floor(Math.random()*5)+13;
 			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "In the last 5 minutes, about "+num+" have died of tuberculosis. Thanks for playing Runescape!", "");
 		}
 
-		if(ticksTilDisease % 5 == 0) {
+		if(ticks % 5 == 0) {
 			fun = Math.max(0, fun-1);
+
+			if(fun == 0) {
+				client.setGameState(GameState.LOGIN_SCREEN);
+			}
 		}
 
 		ticksTilLogout--;
-		ticksTilDisease++;
+		ticks++;
 
 		if(lastPos == null) {
 			lastPos = client.getLocalPlayer().getWorldLocation();
@@ -234,13 +235,13 @@ public class ExamplePlugin extends Plugin
 			}
 		}
 
-		if(config.allergyCats() || config.allergyDogs() && allergyCDTimer == 0) {
+		if((config.allergyCats() || config.allergyDogs()) && allergyCDTimer == 0) {
 			List<NPC> npcs = client.getNpcs();
-
 			for(NPC npc : npcs) {
-				if(client.getLocalPlayer().getWorldLocation().distanceTo(npc.getWorldLocation()) > 5) return;
 
-				if(config.allergyDogs() && dogs.contains(npc.getId()) ) {
+				if(client.getLocalPlayer().getWorldLocation().distanceTo(npc.getWorldLocation()) > 5) continue;
+
+				if(config.allergyDogs() && dogs.contains(npc.getId())) {
 					client.getLocalPlayer().setOverheadText("Achoo!! *sniff* i hate being allergic to doggy.");
 					client.getLocalPlayer().setOverheadCycle(200);
 					allergyCDTimer = allergyCD;
@@ -360,7 +361,11 @@ public class ExamplePlugin extends Plugin
 	public void onMenuOptionClicked(MenuOptionClicked e) {
 		ticksTilLogout = config.logoutTicks();
 
-		if(lastAction == null || lastAction.getIdentifier() != e.getMenuEntry().getIdentifier()) {
+		if(e.getMenuOption() == "Fling") {
+			fun = 100;
+		}
+
+		if(config.confirm() && (lastAction == null || lastAction.getIdentifier() != e.getMenuEntry().getIdentifier())) {
 			e.consume();
 			lastAction = e.getMenuEntry();
 			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Oops! Looks like you want to " + e.getMenuOption() + "! Do it again to confirm.", "");
@@ -398,6 +403,7 @@ public class ExamplePlugin extends Plugin
 	{
 		if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
 		{
+
 		}
 	}
 
@@ -468,8 +474,10 @@ public class ExamplePlugin extends Plugin
 		{
 			NPC npc = (NPC) renderable;
 
-			return !hiddenIDs.contains(npc.getId());
-		}
+			if(config.hideNPCs()) {
+				return !hiddenIDs.contains(npc.getId());
+			}
+ 		}
 
 		return true;
 	}

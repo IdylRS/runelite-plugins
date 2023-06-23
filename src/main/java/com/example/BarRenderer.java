@@ -80,7 +80,7 @@ class BarRenderer
         graphics.fillRect(x, y, width, height);
 
         graphics.setColor(fill);
-        graphics.fillRect(x + BORDER_SIZE + (filledWidth),
+        graphics.fillRect(x + BORDER_SIZE,
                 y + BORDER_SIZE,
                 filledWidth - BORDER_SIZE * 2,
                 height - BORDER_SIZE * 2);
